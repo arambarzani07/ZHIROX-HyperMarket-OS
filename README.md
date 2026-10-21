@@ -52,3 +52,5 @@ Production branch: `main`
 - [پاکێجی کارپێکردنی Windows — 0.3.1](docs/WINDOWS.md)
 
 - [سەبەتەی پارێزراو و فرۆشتنی بێ دووبارە — 0.4.0](docs/CHECKOUT.md)
+
+- [مێژووی پسوولە، گەڕان و چاپکردنەوە — 0.5.0](docs/RECEIPTS.md)
