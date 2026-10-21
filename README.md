@@ -68,3 +68,5 @@ Production branch: `main`
 - [هاوردەکردنی کاڵای نوێ لە CSV و مێژووی هاوردە — 0.15.0](docs/PRODUCT_IMPORT.md)
 
 - [گەڕان و پەڕەبەندی لیستی کاڵاکان — 0.17.0](docs/CATALOG.md)
+
+- [گەڕان و سکانی کاشێر بۆ کاتالۆگی گەورە — 0.18.0](docs/POS_SEARCH.md)
