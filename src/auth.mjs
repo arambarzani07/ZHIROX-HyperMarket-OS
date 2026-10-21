@@ -5,7 +5,7 @@ const scrypt=promisify(scryptCallback);
 const HASH_OPTIONS={N:32768,r:8,p:3,maxmem:64*1024*1024};
 const SESSION_MS=12*60*60*1000;
 export const PERMISSIONS=Object.freeze({
- owner:['products.read','products.write','sales.create','receipts.all','backup.create','team.manage','audit.read'],
+ owner:['products.read','products.write','sales.create','receipts.all','backup.create','sync.manage','team.manage','audit.read'],
  manager:['products.read','products.write','sales.create','receipts.all','audit.read'],
  cashier:['products.read','sales.create','receipts.own'],
  warehouse:['products.read','products.write']
