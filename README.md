@@ -64,3 +64,5 @@ Production branch: `main`
 - [ئامادەکردنی کۆپێی گەڕاندنەوە و یەکگرتنەوەی داتا — 0.10.0](docs/RECOVERY.md)
 
 - [هەناردەی کاڵاکان بۆ CSV — 0.12.0](docs/CATALOG_EXPORT.md)
+
+- [هاوردەکردنی کاڵای نوێ لە CSV — 0.14.0](docs/PRODUCT_IMPORT.md)
