@@ -49,5 +49,13 @@ test('HTTP permissions, CSRF, staff access and receipt ownership are enforced on
  assert.equal((await request('/api/users/'+staff.cashier.id,{method:'PATCH',session:owner,body:{active:false}})).status,200);
  assert.equal((await request('/api/products',{session:staff.cashier})).status,401);
  const audit=await request('/api/access-audit',{session:owner});assert.ok(audit.data.entries.some(x=>x.action==='user.access_changed'));assert.equal(JSON.stringify(audit.data).includes(password),false);
+
+ const passwordBody={current_password:password,new_password:'HTTP-new-fixture-passphrase-only'};
+ assert.equal((await request('/api/auth/password',{method:'POST',body:passwordBody})).status,401);
+ assert.equal((await request('/api/auth/password',{method:'POST',session:owner,csrf:false,body:passwordBody})).status,403);
+ assert.equal((await fetch(base+'/api/auth/password',{method:'POST',headers:{'Content-Type':'application/json',Cookie:owner.cookie,'X-Zhirox-CSRF':owner.csrf,Origin:'https://evil.example'},body:JSON.stringify(passwordBody)})).status,403);
+ const changed=await request('/api/auth/password',{method:'POST',session:staff.warehouse,body:{...passwordBody,user_id:owner.user.id}});assert.equal(changed.status,200);assert.equal(changed.data.reauthentication_required,true);assert.match(changed.response.headers.get('set-cookie'),/Max-Age=0/);assert.equal((await request('/api/products',{session:staff.warehouse})).status,401);assert.equal((await request('/api/users',{session:owner})).status,200);
+ assert.equal((await request('/api/auth/login',{method:'POST',body:{username:'warehouse',password}})).status,401);const newLogin=await request('/api/auth/login',{method:'POST',body:{username:'warehouse',password:passwordBody.new_password}});assert.equal(newLogin.status,200);assert.equal(newLogin.data.user.id,staff.warehouse.id);assert.equal((await request('/api/inventory',{session:{cookie:newLogin.response.headers.get('set-cookie').split(';')[0],csrf:newLogin.data.csrf}})).data.products[0].stock_milli,17000);assert.equal((await request('/api/receipts',{session:owner})).data.receipts.length,3);
  assert.equal((await request('/api/auth/logout',{method:'POST',session:owner,body:{}})).status,200);assert.equal((await request('/api/users',{session:owner})).status,401);
+
 });
