@@ -50,3 +50,5 @@ Production branch: `main`
 - [هاوکاتکردنی Supabase — 0.3.0](docs/SYNC.md)
 
 - [پاکێجی کارپێکردنی Windows — 0.3.1](docs/WINDOWS.md)
+
+- [سەبەتەی پارێزراو و فرۆشتنی بێ دووبارە — 0.4.0](docs/CHECKOUT.md)
