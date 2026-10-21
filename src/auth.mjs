@@ -5,10 +5,10 @@ const scrypt=promisify(scryptCallback);
 const HASH_OPTIONS={N:32768,r:8,p:3,maxmem:64*1024*1024};
 const SESSION_MS=12*60*60*1000;
 export const PERMISSIONS=Object.freeze({
- owner:['products.read','products.write','sales.create','receipts.all','reports.read','backup.create','sync.manage','team.manage','audit.read'],
- manager:['products.read','products.write','sales.create','receipts.all','reports.read','audit.read'],
+ owner:['products.read','products.write','products.export','sales.create','receipts.all','reports.read','backup.create','sync.manage','team.manage','audit.read'],
+ manager:['products.read','products.write','products.export','sales.create','receipts.all','reports.read','audit.read'],
  cashier:['products.read','sales.create','receipts.own'],
- warehouse:['products.read','products.write']
+ warehouse:['products.read','products.write','products.export']
 });
 const fail=(message,status=400)=>{throw new DomainError(message,status);};
 const digest=value=>createHash('sha256').update(value).digest('hex');
