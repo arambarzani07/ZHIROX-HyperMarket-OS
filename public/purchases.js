@@ -1,19 +1,21 @@
 (()=>{
  const root=document.getElementById('hyper-cards'),q=s=>root.querySelector(s);
- let generation=0,suppliers=[],products=[],items=[],supplierId='',busy=false;
+ let generation=0,supplierSearch=0,productSearch=0,suppliers=[],products=[],items=[],supplierId='',busy=false;
  const current=g=>g===generation&&window.zhiroxCurrentPage==='purchases';
  const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const money=(n,c)=>new Intl.NumberFormat('en-US',{minimumFractionDigits:c==='USD'?2:0,maximumFractionDigits:c==='USD'?2:0}).format(n/(c==='USD'?100:1));
  const quantity=n=>new Intl.NumberFormat('en-US',{maximumFractionDigits:3}).format(n/1000);
  const chosen=()=>suppliers.find(s=>s.id===supplierId);
  const status=(message,error=false)=>{const el=q('#purchase-status');if(el){el.textContent=message;el.setAttribute('role',error?'alert':'status');}};
- function clear(){generation++;suppliers=[];products=[];items=[];supplierId='';busy=false;}
+ function clear(){generation++;supplierSearch=0;productSearch=0;suppliers=[];products=[];items=[];supplierId='';busy=false;}
  function invalidate(){const el=q('#purchase-result');if(el)el.replaceChildren();}
  function rows(){
   const body=q('#purchase-items');if(!body)return;
   const currency=chosen()?.currency||'IQD';
   body.innerHTML=items.length?items.map((x,i)=>'<tr><td>'+esc(x.name)+'<div class="sub">'+esc(x.sku)+'</div></td><td>'+(x.unit==='carton'?'کارتۆن':'دانە')+'</td><td>'+x.quantity+'</td><td dir="ltr">'+money(x.unit_cost,currency)+'</td><td><button class="btn" type="button" data-remove-purchase="'+i+'">لابردن</button></td></tr>').join(''):'<tr><td colspan="5">هێشتا هیچ کاڵایەک زیاد نەکراوە.</td></tr>';
   q('#purchase-preview-button').disabled=busy||!items.length||!supplierId;
+  q('#purchase-supplier').disabled=busy;q('#purchase-product').disabled=busy;
+  body.querySelectorAll('[data-remove-purchase]').forEach(button=>button.disabled=busy);
  }
  function currencies(){
   const s=chosen();
@@ -21,10 +23,10 @@
   q('#purchase-add').disabled=!s||busy;
  }
  async function loadSuppliers(term=''){
-  const g=generation;status('گەڕانی دابینکەرەکان…');
+  const g=generation,request=++supplierSearch;status('گەڕانی دابینکەرەکان…');
   try{
    const result=await window.zhiroxRequest('/api/suppliers?'+new URLSearchParams({q:term,limit:'50'}));
-   if(!current(g))return;suppliers=result.suppliers;
+   if(!current(g)||request!==supplierSearch)return;suppliers=result.suppliers;
    const select=q('#purchase-supplier');
    select.innerHTML='<option value="">دابینکەر هەڵبژێرە</option>'+suppliers.map(s=>'<option value="'+esc(s.id)+'">'+esc(s.code+' — '+s.name+' ('+s.currency+')')+'</option>').join('');
    supplierId='';items=[];products=[];q('#purchase-product').innerHTML='<option value="">کاڵا هەڵبژێرە</option>';
@@ -32,12 +34,12 @@
   }catch(e){if(current(g))status(e.message,true);}
  }
  async function loadProducts(term=''){
-  const g=generation,s=chosen();
+  const g=generation,request=++productSearch,s=chosen();
   if(!s)return status('سەرەتا دابینکەر هەڵبژێرە',true);
   status('گەڕانی کاڵاکان…');
   try{
    const result=await window.zhiroxRequest('/api/catalog?'+new URLSearchParams({q:term,limit:'50'}));
-   if(!current(g)||chosen()?.id!==s.id)return;
+   if(!current(g)||request!==productSearch||chosen()?.id!==s.id)return;
    products=result.products.filter(p=>p.currency===s.currency);
    q('#purchase-product').innerHTML='<option value="">کاڵا هەڵبژێرە</option>'+products.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.sku+' — '+p.name)+'</option>').join('');
    status(result.total>50?'٥٠ کاڵای یەکەم؛ بۆ زیاتر گەڕان بکە.':'نرخەکە بۆ هەر کڕینێک بە دەستی خاوەن یان بەڕێوەبەر دیاری دەکرێت.');
@@ -80,16 +82,16 @@
   currencies();rows();void loadSuppliers();
  }
  root.addEventListener('submit',e=>{
-  if(e.target.id==='purchase-supplier-search'){e.preventDefault();void loadSuppliers(new FormData(e.target).get('q')||'');}
-  if(e.target.id==='purchase-product-search'){e.preventDefault();void loadProducts(new FormData(e.target).get('q')||'');}
+  if(e.target.id==='purchase-supplier-search'){e.preventDefault();if(!busy)void loadSuppliers(new FormData(e.target).get('q')||'');}
+  if(e.target.id==='purchase-product-search'){e.preventDefault();if(!busy)void loadProducts(new FormData(e.target).get('q')||'');}
  });
  root.addEventListener('change',e=>{
-  if(e.target.id==='purchase-supplier'){supplierId=e.target.value;items=[];products=[];currencies();rows();invalidate();void loadProducts();}
+  if(e.target.id==='purchase-supplier'&&!busy){supplierId=e.target.value;items=[];products=[];currencies();rows();invalidate();void loadProducts();}
  });
  root.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
-  if(b.id==='purchase-add'){try{add();}catch(error){status(error.message,true);}}
-  if(b.dataset.removePurchase!==undefined){items.splice(Number(b.dataset.removePurchase),1);rows();invalidate();}
+  if(b.id==='purchase-add'&&!busy){try{add();}catch(error){status(error.message,true);}}
+  if(b.dataset.removePurchase!==undefined&&!busy){items.splice(Number(b.dataset.removePurchase),1);rows();invalidate();}
   if(b.id==='purchase-preview-button')void preview();
  });
  window.zhiroxPurchases={render,clear,focus(){q('#purchase-supplier')?.focus();}};
