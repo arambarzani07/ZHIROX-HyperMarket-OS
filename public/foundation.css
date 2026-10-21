@@ -6,3 +6,11 @@
 #receipt-print table{border-collapse:collapse;width:100%;text-align:right}#receipt-print th,#receipt-print td{padding:8px;border-bottom:1px solid #ccc}#receipt-print button{padding:9px 18px;margin:7px;font:inherit}
 @media(max-width:510px){#hyper-cards #local-product-form{grid-template-columns:1fr}}
 @media print{body>*{display:none!important}body>#receipt-print:not([hidden]){display:block!important;border:0;margin:0;padding:0;max-width:none;font-size:12px}#receipt-print button{display:none!important}@page{margin:8mm}}
+#hyper-cards.auth-locked>.shell{display:none!important}
+#hyper-cards #auth-gate{max-width:540px;margin:42px auto;padding:25px;border:1px solid var(--line);border-top:3px solid var(--green);border-radius:7px;background:var(--surface);color:var(--text)}
+#hyper-cards #auth-gate h2{font-size:21px;font-weight:500;margin:0 0 12px}
+#hyper-cards #auth-account{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+#hyper-cards header #auth-account .sub{color:inherit;font-size:11px}
+#hyper-cards #auth-error,#hyper-cards #staff-error{color:light-dark(#922929,#ffc2c2);font-size:13px}
+#hyper-cards #staff-form{width:100%}
+@media(max-width:600px){#hyper-cards #auth-gate{margin:20px 14px;padding:19px}}
