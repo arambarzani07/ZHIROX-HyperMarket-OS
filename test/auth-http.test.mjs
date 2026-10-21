@@ -23,6 +23,15 @@ test('HTTP permissions, CSRF, staff access and receipt ownership are enforced on
  assert.equal((await request('/api/receipts/'+receiptId,{session:staff.manager})).status,200);
  assert.equal((await request('/api/sales',{method:'POST',session:staff.cashier,body:sale})).status,400);
  const cashierSale=await request('/api/sales',{method:'POST',session:staff.cashier,body:{...sale,request_id:randomUUID()}});assert.equal(cashierSale.status,201);assert.equal((await request('/api/receipts/'+cashierSale.data.receipt.id,{session:staff.cashier})).status,200);
+ assert.equal((await request('/api/cart')).status,401);assert.equal((await request('/api/cart',{session:staff.warehouse})).status,403);
+ const draftBody={revision:0,items:[{product_id:created.data.product.id,unit:'unit',quantity:1}],received:'2000',actor_id:owner.user.id};
+ assert.equal((await request('/api/cart',{method:'PUT',session:staff.cashier,csrf:false,body:draftBody})).status,403);
+ const draft=await request('/api/cart',{method:'PUT',session:staff.cashier,body:draftBody});assert.equal(draft.status,200);assert.deepEqual((await request('/api/cart',{session:owner})).data.cart.items,[]);
+ assert.equal((await request('/api/cart/checkout',{method:'POST',session:staff.cashier,csrf:false,body:draft.data.cart})).status,403);
+ const checkout=await request('/api/cart/checkout',{method:'POST',session:staff.cashier,body:draft.data.cart});assert.equal(checkout.status,201);
+ const replay=await request('/api/cart/checkout',{method:'POST',session:staff.cashier,body:draft.data.cart});assert.equal(replay.data.receipt.id,checkout.data.receipt.id);
+ assert.equal((await request('/api/cart/checkout',{method:'POST',session:owner,body:draft.data.cart})).status,403);
+ assert.equal((await request('/api/cart',{session:staff.cashier})).data.cart.last_receipt.id,checkout.data.receipt.id);
  assert.equal((await request('/api/users/'+staff.cashier.id,{method:'PATCH',session:owner,body:{active:false}})).status,200);
  assert.equal((await request('/api/products',{session:staff.cashier})).status,401);
  const audit=await request('/api/access-audit',{session:owner});assert.ok(audit.data.entries.some(x=>x.action==='user.access_changed'));assert.equal(JSON.stringify(audit.data).includes(password),false);
