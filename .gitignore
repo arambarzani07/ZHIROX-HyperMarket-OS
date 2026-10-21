@@ -4,3 +4,9 @@
 supabase/.temp/
 supabase/.branches/
 node_modules/
+data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+backups/
+coverage/
