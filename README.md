@@ -48,3 +48,5 @@ Production branch: `main`
 - [چوونەژوورەوە و دەسەڵاتی ناوخۆ — 0.2.0](docs/LOCAL_ACCESS.md)
 
 - [هاوکاتکردنی Supabase — 0.3.0](docs/SYNC.md)
+
+- [پاکێجی کارپێکردنی Windows — 0.3.1](docs/WINDOWS.md)
