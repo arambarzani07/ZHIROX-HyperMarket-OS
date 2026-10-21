@@ -50,6 +50,7 @@ const server=createServer(async(req,res)=>{res.setHeader('X-Content-Type-Options
  if(url.pathname==='/api/access-audit'&&req.method==='GET')return json(res,200,{entries:auth.audit(session)});
  if(url.pathname==='/api/reports/products'&&req.method==='GET')return json(res,200,reports.products(session,Object.fromEntries(url.searchParams)));
  if(url.pathname==='/api/reports/sales'&&req.method==='GET')return json(res,200,reports.sales(session,Object.fromEntries(url.searchParams)));
+ if(url.pathname==='/api/inventory/export.csv'&&req.method==='GET'){const result=inventory.export(session,Object.fromEntries(url.searchParams));res.writeHead(200,{'Content-Type':'text/csv; charset=utf-8','Content-Disposition':`attachment; filename="zhirox-inventory-${result.as_of.slice(0,10)}.csv"`,'Content-Length':Buffer.byteLength(result.csv),'Cache-Control':'no-store','X-Zhirox-Product-Count':String(result.products),'X-Zhirox-Exported-At':result.as_of});res.end(result.csv);return;}
  if(url.pathname==='/api/inventory'&&req.method==='GET')return json(res,200,inventory.list(session,Object.fromEntries(url.searchParams)));
  const ledgerPath=url.pathname.match(/^\/api\/inventory\/([^/]+)\/ledger$/);if(ledgerPath&&req.method==='GET')return json(res,200,inventory.ledger(session,ledgerPath[1],Object.fromEntries(url.searchParams)));
  if(url.pathname==='/api/products/imports'&&req.method==='GET')return json(res,200,productImport.history(session,Object.fromEntries(url.searchParams)));
