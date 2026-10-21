@@ -58,3 +58,5 @@ Production branch: `main`
 - [کۆگا و مێژووی جووڵە — 0.6.0](docs/INVENTORY.md)
 
 - [ڕاپۆرتی فرۆشتنی نەقد و هەناردە/چاپ — 0.7.1](docs/REPORTS.md)
+
+- [بەڕێوەبردن، داگرتن و پشکنینی باکئەپ — 0.8.0](docs/BACKUPS.md)
