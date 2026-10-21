@@ -15,4 +15,6 @@ test('HTTP import enforces roles/CSRF, preserves chunked Kurdish UTF-8 and appli
  for(const person of [owner,...Object.values(staff)]){const r=await fetch(base+stockExport+'?q=0009002&stock=available',{headers:{Cookie:person.cookie}});assert.equal(r.status,200);assert.match(r.headers.get('content-type'),/text\/csv/);assert.match(r.headers.get('content-disposition'),/attachment/);assert.equal(r.headers.get('cache-control'),'no-store');assert.equal(r.headers.get('x-zhirox-product-count'),'1');const text=await r.text();assert.ok(text.includes('12.001'));assert.ok(text.includes('0009001'));assert.equal(text.includes('نرخی کڕین'),false);assert.equal(text.includes('0.99'),false);}
  assert.equal((await fetch(base+stockExport+'?limit=1',{headers:{Cookie:owner.cookie}})).status,400);
 
+ assert.equal((await call('/api/catalog')).status,401);for(const person of [owner,...Object.values(staff)]){const r=await call('/api/catalog?q=0009002&limit=1',{session:person});assert.equal(r.status,200);assert.equal(r.data.total,1);assert.equal(r.data.products[0].sku,'HTTP-IMPORT');assert.equal(r.data.products[0].barcodes.length,2);assert.equal('unit_cost' in r.data.products[0],false);}assert.equal((await call('/api/catalog?limit=51',{session:owner})).status,400);
+
 });
