@@ -4,7 +4,7 @@ const max=BigInt(Number.MAX_SAFE_INTEGER);
 const whole=(n,min=0n)=>typeof n==='bigint'&&n>=min&&n<=max;
 const rows=(db,sql)=>{const q=db.prepare(sql);q.setReadBigInts(true);return q.iterate();};
 export function reconcile(db){
- const failures={stock:0,receipts:0,sale_items:0,sale_movements:0,opening_movements:0};
+ const failures={stock:0,receipts:0,sale_items:0,sale_movements:0,opening_movements:0,purchase_documents:0,purchase_items:0,purchase_movements:0};
  const products=new Map(),sales=new Map(),demand=new Map(),movements=new Map(),openings=new Set();
  let itemCount=0,movementCount=0;
  for(const p of rows(db,'SELECT id,currency,stock_milli FROM products'))products.set(p.id,{...p,balance:0n});
@@ -29,11 +29,39 @@ export function reconcile(db){
    if(valid)add(movements,x.reference_id,x.product_id,-x.delta_milli);
   }else failures.sale_movements++;
  }
+ // New cash purchases have a separate immutable append-only ledger; old stock_ledger is untouched.
+ let purchaseCount=0,purchaseItemCount=0,purchaseMovementCount=0;
+ if(db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='purchases'").get()){
+  const docs=new Map(),need=new Map(),actual=new Map();
+  for(const p of rows(db,'SELECT id,currency,total,cash_paid FROM purchases')){
+   purchaseCount++;docs.set(p.id,{...p,items:0,sum:0n});
+  }
+  for(const x of rows(db,'SELECT purchase_id,product_id,unit,quantity,base_milli,unit_cost,line_total FROM purchase_items')){
+   purchaseItemCount++;const doc=docs.get(x.purchase_id),product=products.get(x.product_id);
+   const valid=whole(x.quantity,1n)&&whole(x.base_milli,1n)&&whole(x.unit_cost)&&whole(x.line_total);
+   const units=valid&&x.base_milli%(x.quantity*1000n)===0n&&(x.unit==='carton'||(x.unit==='unit'&&x.base_milli===x.quantity*1000n));
+   if(!doc||!product||doc.currency!==product.currency||!valid||!units||x.line_total!==x.unit_cost*x.quantity)failures.purchase_items++;
+   if(doc){doc.items++;doc.sum+=typeof x.line_total==='bigint'?x.line_total:0n;}
+   if(valid)add(need,x.purchase_id,x.product_id,x.base_milli);
+  }
+  for(const x of rows(db,'SELECT product_id,delta_milli,reference_id FROM purchase_stock_ledger')){
+   purchaseMovementCount++;
+   const p=products.get(x.product_id),good=whole(x.delta_milli,1n);
+   if(!p||!good||!docs.has(x.reference_id))failures.purchase_movements++;
+   if(p&&good)p.balance+=x.delta_milli;
+   if(good)add(actual,x.reference_id,x.product_id,x.delta_milli);
+  }
+  for(const doc of docs.values())if(!['IQD','USD'].includes(doc.currency)||!whole(doc.total)||!whole(doc.cash_paid)||doc.total!==doc.cash_paid||!doc.items||doc.sum!==doc.total)failures.purchase_documents++;
+  for(const doc of new Set([...need.keys(),...actual.keys()])){
+   const expected=need.get(doc)||new Map(),applied=actual.get(doc)||new Map();
+   for(const product of new Set([...expected.keys(),...applied.keys()]))if(expected.get(product)!==applied.get(product))failures.purchase_movements++;
+  }
+ }
  for(const p of products.values())if(!['IQD','USD'].includes(p.currency)||!whole(p.stock_milli)||p.balance!==p.stock_milli)failures.stock++;
  for(const s of sales.values())if(!['IQD','USD'].includes(s.currency)||!whole(s.total)||!whole(s.received)||s.received<s.total||!s.items||s.sum!==s.total)failures.receipts++;
  for(const sale of new Set([...demand.keys(),...movements.keys()])){
   const wanted=demand.get(sale)||new Map(),actual=movements.get(sale)||new Map();
   for(const product of new Set([...wanted.keys(),...actual.keys()]))if(wanted.get(product)!==actual.get(product))failures.sale_movements++;
  }
- return{ok:Object.values(failures).every(n=>n===0),model:'opening-stock-and-cash-sales-v1',checked:{products:products.size,receipts:sales.size,sale_items:itemCount,stock_movements:movementCount},failures};
+ return{ok:Object.values(failures).every(n=>n===0),model:'opening-stock-and-cash-sales-and-purchases-v2',checked:{products:products.size,receipts:sales.size,sale_items:itemCount,stock_movements:movementCount,purchases:purchaseCount,purchase_items:purchaseItemCount,purchase_stock_movements:purchaseMovementCount},failures};
 }
