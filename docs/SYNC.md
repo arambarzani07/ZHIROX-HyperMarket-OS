@@ -4,11 +4,11 @@ Local SQLite remains the operational database. An owner can inspect **بەڕێو
 
 ## Implemented
 
-- Products, exact barcode strings, posted cash receipts (including lines), and immutable stock movements upload in local commit order.
+- Products, exact barcode strings, posted cash sale receipts, posted cash purchases and their immutable sale/purchase stock movements upload in local commit order.
 - Stable outbox event IDs and sequences; a transaction on Supabase locks the device checkpoint and atomically applies an event and its acknowledgement record. Replayed identical events are acknowledged without creating another sale or decrementing stock again. Changed replays or sequence gaps fail closed.
 - Acknowledgement must match the local ID and sequence before `synced_at` is recorded. An interrupted or ambiguous request stays queued.
 - On startup and every six hours while running; bounded batches of 100 events. The scheduler checks every 15 seconds, resumes a backlog after a batch, and backs off from 15 seconds to five minutes after failure. Closing the app pauses sync.
-- Per-market composite keys, one registered writing device per market for v1, revocable device credentials. Anonymous/authenticated direct table access and RPC execution are denied; RLS enabled. Cloud readers and multi-device writes are not implemented.
+- Per-market composite keys, one registered writing device per market for v1, revocable device credentials. The additive `zhirox_cash_purchase_sync` migration supports purchase.created with its own immutable purchase ledger. Anonymous/authenticated direct table access and RPC execution are denied; RLS enabled. Cloud readers and multi-device writes are not implemented.
 - Local owner passwords, password hashes, login sessions and access audit are never uploaded. No service-role key is installed on the PC or sent to the browser.
 
 ## Pair a Windows PC
