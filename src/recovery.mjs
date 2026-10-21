@@ -45,14 +45,14 @@ export async function prepareRecovery({backup,output,liveDataDir=resolveDataDire
   const destination=join(target,'zhirox.sqlite'),hash=createHash('sha256'),sourceHandle=await open(actual,'r');
   try{const outputHandle=await open(destination,'wx',0o600);await pipeline(sourceHandle.createReadStream(),new Transform({transform(chunk,encoding,done){hash.update(chunk);done(null,chunk);}}),outputHandle.createWriteStream());}finally{await sourceHandle.close();}
   const sourceHash=hash.digest('hex');check(sourceHash===await hashFile(actual),'باکئەپ لە کاتی کۆپیکردندا گۆڕاوە؛ فایلێکی تەواوبوو هەڵبژێرە');
-  const verification=await verifySQLite(destination);check(verification.ok,'پشکنینی باکئەپ سەرکەوتوو نەبوو: '+verification.reason);
+  const verification=await verifySQLite(destination,{reconcile:true});check(verification.ok,'پشکنینی باکئەپ سەرکەوتوو نەبوو: '+verification.reason);
   db=new DatabaseSync(destination,{allowExtension:false});db.exec('PRAGMA trusted_schema=OFF; PRAGMA foreign_keys=ON;');compatibility(db);
   const fingerprint=dataFingerprint(db),auditHash=auditFingerprint(db),sessions=db.prepare('SELECT count(*) n FROM auth_sessions').get().n,auditID=randomUUID();
   db.exec('BEGIN IMMEDIATE');try{db.exec('DELETE FROM auth_sessions');check(db.prepare('SELECT count(*) n FROM auth_sessions').get().n===0,'دانیشتنە کۆنەکان لە کۆپێکە پاک نەکرانەوە');db.prepare('INSERT INTO access_audit VALUES(?,?,?,?,?,?)').run(auditID,null,'recovery.prepared',null,JSON.stringify({source_sha256:sourceHash,sessions_revoked:sessions,cloud_sync_enabled:false}),Date.now());check(dataFingerprint(db)===fingerprint&&auditFingerprint(db,auditID)===auditHash,'داتای پارێزراو لە کۆپێی گەڕاندنەوە گۆڕاوە');db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}
   db.exec('PRAGMA wal_checkpoint(TRUNCATE)');db.close();db=null;
-  const finalVerification=await verifySQLite(destination);check(finalVerification.ok,'پشکنینی کۆتایی کۆپێی گەڕاندنەوە سەرکەوتوو نەبوو');
+  const finalVerification=await verifySQLite(destination,{reconcile:true});check(finalVerification.ok,'پشکنینی کۆتایی کۆپێی گەڕاندنەوە سەرکەوتوو نەبوو');
   check(!await exists(join(target,'sync-device.json')),'فۆڵدەری ئامانج دەبێت بێ ناسنامەی کلاود بێت');
-  const report={prepared_at:new Date().toISOString(),source_filename:basename(actual),source_sha256:sourceHash,prepared_sha256:await hashFile(destination),counts:finalVerification.counts,sessions_revoked:sessions,cloud_sync_enabled:false,requires_review:true};
+  const report={prepared_at:new Date().toISOString(),source_filename:basename(actual),source_sha256:sourceHash,prepared_sha256:await hashFile(destination),counts:finalVerification.counts,reconciliation:finalVerification.reconciliation,sessions_revoked:sessions,cloud_sync_enabled:false,requires_review:true};
   await writeFile(join(target,'recovery-report.json'),JSON.stringify(report,null,2)+'\n',{mode:0o600,flag:'wx'});
   return{directory:target,...report};
  }catch(e){db?.close();if(owned)await rm(target,{recursive:true,force:true});throw e;}
