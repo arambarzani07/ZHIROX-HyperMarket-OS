@@ -1,10 +1,10 @@
 // Run on the target PC. Prints registration SQL with a HASH only, never the token.
 import {mkdirSync,writeFileSync} from 'node:fs';
-import {join,resolve} from 'node:path';
-import {fileURLToPath} from 'node:url';
+import {join} from 'node:path';
+import {resolveDataDirectory} from '../src/data-directory.mjs';
 import {randomBytes,randomUUID,createHash} from 'node:crypto';
 import {readSyncConfig} from '../src/sync.mjs';
-const dir=resolve(process.env.ZHIROX_DATA_DIR||fileURLToPath(new URL('../data/',import.meta.url)));
+const dir=resolveDataDirectory();
 mkdirSync(dir,{recursive:true,mode:0o700});
 const file=join(dir,'sync-device.json');let c=readSyncConfig(file);
 if(!c){c={endpoint:'https://qcfmlyyzfykzszvtllrw.supabase.co/functions/v1/zhirox-sync',market_id:randomUUID(),device_id:randomUUID(),token:randomBytes(32).toString('base64url')};writeFileSync(file,JSON.stringify(c),{mode:0o600,flag:'wx'});}
