@@ -15,8 +15,8 @@ Local SQLite remains the operational database. An owner can inspect **بەڕێو
 
 The test environment has a registered device and a successful empty-queue cloud handshake. **A GitHub checkout does not include a device credential and does not pair a Windows PC.**
 
-1. Stop the local application. Run `npm run sync:prepare` on the actual PC with the same `ZHIROX_DATA_DIR` used by the application.
-2. The command creates `data/sync-device.json` if absent (or preserves the existing identity), and prints registration SQL containing a SHA-256 hash only. A project administrator runs that SQL in the linked project's SQL Editor. No user password or service-role key is needed by the local application.
+1. Stop the local application. Run `npm run sync:prepare` on the actual PC with the same `ZHIROX_DATA_DIR` used by the application. Windows 0.3.1 resolves the default to `%LOCALAPPDATA%\ZHIROX-HyperMarket-OS\data` for a new installation, preserving a legacy app-local data directory if one exists.
+2. The command creates `sync-device.json` in the application data directory if absent (or preserves the existing identity), and prints registration SQL containing a SHA-256 hash only. A project administrator runs that SQL in the linked project's SQL Editor. No user password or service-role key is needed by the local application.
 3. Restart `npm start`, sign in as the local owner, open the data section and sync. A new PC is a new market identity; this is not a way to add a second writer to an existing market.
 4. Protect the runtime data folder with the owner's OS account permissions, including Windows ACLs. The local credential is a scoped bearer secret. Do not commit it or paste it into chat. Revoke a lost device by setting `zhirox_private.devices.active=false` through the project administrator.
 
