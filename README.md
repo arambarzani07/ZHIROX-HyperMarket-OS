@@ -72,3 +72,4 @@ Production branch: `main`
 - [گەڕان و سکانی کاشێر بۆ کاتالۆگی گەورە — 0.18.0](docs/POS_SEARCH.md)
 
 - [تۆمار، دەستکاری و پرۆفایلی دابینکەرەکان — 0.20.0](docs/SUPPLIERS.md)
+- [پێشبینینی پارێزراوی کڕین (0.21.0 لە ژێر کاردا؛ بێ posting)](docs/PURCHASE_PREVIEW.md)
