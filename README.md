@@ -21,7 +21,7 @@ supabase link --project-ref qcfmlyyzfykzszvtllrw
 
 ## پەیوەندی خۆکاری GitHub
 
-ڕێکخستنی ریپۆ ئامادەیە؛ پەیوەندی خۆکاری داشبۆرد هێشتا چالاک نەکراوە.
+پەیوەندی ئەم ریپۆیە لە داشبۆردی Supabase پشتڕاست کراوەتەوە. هاوکاتکردنی داتای ئەپ هێشتا چالاک نییە.
 
 لە Supabase → Project Settings → Integrations → GitHub، ئەم ریپۆیە هەڵبژێرە:
 `arambarzani07/ZHIROX-HyperMarket-OS`
@@ -44,3 +44,5 @@ Production branch: `main`
 - [دیزاینی قوفڵکراو](docs/DESIGN_LOCK.md)
 
 پەیوەندی ریپۆ لە داشبۆردی Supabase پێشتر پشتڕاست کراوەتەوە؛ ئەم وەشانە داتای ناوخۆ بەکاردەهێنێت و هاوکاتکردنی کلاود هێشتا چالاک نییە.
+
+- [چوونەژوورەوە و دەسەڵاتی ناوخۆ — 0.2.0](docs/LOCAL_ACCESS.md)
