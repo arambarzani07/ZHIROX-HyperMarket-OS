@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join, extname } from 'node:path';
 import { openStore,DomainError } from './store.mjs';
 import {resolveDataDirectory} from './data-directory.mjs';
+import {openReceipts} from './receipts.mjs';
 import {openCheckout} from './checkout.mjs';
 import { openAuth } from './auth.mjs';
 import { openSync,readSyncConfig } from './sync.mjs';
@@ -11,7 +12,7 @@ const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const port=Number(process.env.PORT||3187),host=process.env.ZHIROX_BIND||'127.0.0.1';
 if(!Number.isInteger(port)||port<1||port>65535)throw new Error('Invalid port');
 if(!['127.0.0.1','localhost'].includes(host)&&process.env.ZHIROX_PREVIEW!=='1')throw new Error('Public binding is disabled for this local foundation');
-const dataDir=resolveDataDirectory();await mkdir(dataDir,{recursive:true});const store=openStore(join(dataDir,'zhirox.sqlite'));const auth=openAuth(store.db);const checkout=openCheckout(store);
+const dataDir=resolveDataDirectory();await mkdir(dataDir,{recursive:true});const store=openStore(join(dataDir,'zhirox.sqlite'));const auth=openAuth(store.db);const checkout=openCheckout(store);const receipts=openReceipts(store);
 let sync;
 try{sync=openSync(store,readSyncConfig(join(dataDir,'sync-device.json')));}catch{
  const local=openSync(store,null);sync={...local,status:()=>({...local.status(),error:'configuration_invalid'}),async run(){throw new DomainError('ڕێکخستنی کلاود نادروستە؛ کارکردنی ناوخۆ بەردەوامە',409);}};
@@ -48,6 +49,7 @@ const server=createServer(async(req,res)=>{res.setHeader('X-Content-Type-Options
  if(url.pathname==='/api/sync'&&req.method==='GET'){auth.requirePermission(session,'sync.manage');return json(res,200,sync.status());}
  if(url.pathname==='/api/sync/run'&&req.method==='POST'){auth.requirePermission(session,'sync.manage');await body(req);return json(res,200,await sync.run({force:true}));}
  if(url.pathname==='/api/backup'&&req.method==='POST'){auth.requirePermission(session,'backup.create');await body(req);return json(res,201,await store.backup(join(dataDir,'backups')));}
+ if(url.pathname==='/api/receipts'&&req.method==='GET')return json(res,200,receipts.list(session,Object.fromEntries(url.searchParams)));
  if(url.pathname.startsWith('/api/receipts/')&&req.method==='GET'){
   if(!session.user.permissions.some(x=>['receipts.all','receipts.own'].includes(x)))throw new DomainError('دەسەڵاتی پسوولەت نییە',403);
   const id=url.pathname.split('/').pop();const receipt=store.receipt(id);const actor=receipt?store.db.prepare('SELECT actor_id FROM sales WHERE id=?').get(id):null;
