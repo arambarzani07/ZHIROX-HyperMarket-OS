@@ -1,6 +1,6 @@
 {
   "name": "zhirox-hypermarket-os",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "private": true,
   "type": "module",
   "engines": {
@@ -10,7 +10,7 @@
     "start": "node src/server.mjs",
     "dev": "node scripts/preview.mjs",
     "test": "node --test test/*.test.mjs",
-    "check": "node --check src/server.mjs && node --check src/data-directory.mjs && node --check scripts/check-runtime.mjs && node --check scripts/package-windows.mjs && node --check src/store.mjs && node --check src/reports.mjs && node --check public/report-format.js && node --check public/reports.js && node --check src/inventory.mjs && node --check public/inventory.js && node --check src/receipts.mjs && node --check public/receipts.js && node --check src/checkout.mjs && node --check public/cart-state.js && node --check src/auth.mjs && node --check src/sync.mjs && node --check scripts/prepare-sync.mjs && node --check public/shell.js && node --check public/foundation.js && node --check public/auth.js && node --check public/sync.js && node scripts/verify-design.mjs",
+    "check": "node --check src/server.mjs && node --check src/data-directory.mjs && node --check scripts/check-runtime.mjs && node --check scripts/package-windows.mjs && node --check src/store.mjs && node --check src/reports.mjs && node --check public/report-format.js && node --check public/reports.js && node --check public/report-export.js && node --check src/inventory.mjs && node --check public/inventory.js && node --check src/receipts.mjs && node --check public/receipts.js && node --check src/checkout.mjs && node --check public/cart-state.js && node --check src/auth.mjs && node --check src/sync.mjs && node --check scripts/prepare-sync.mjs && node --check public/shell.js && node --check public/foundation.js && node --check public/auth.js && node --check public/sync.js && node scripts/verify-design.mjs",
     "sync:prepare": "node scripts/prepare-sync.mjs",
     "doctor": "node scripts/check-runtime.mjs",
     "package:windows": "node scripts/package-windows.mjs"
