@@ -54,3 +54,5 @@ Production branch: `main`
 - [سەبەتەی پارێزراو و فرۆشتنی بێ دووبارە — 0.4.0](docs/CHECKOUT.md)
 
 - [مێژووی پسوولە، گەڕان و چاپکردنەوە — 0.5.0](docs/RECEIPTS.md)
+
+- [کۆگا و مێژووی جووڵە — 0.6.0](docs/INVENTORY.md)
