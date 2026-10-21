@@ -62,3 +62,5 @@ Production branch: `main`
 - [بەڕێوەبردن، داگرتن و پشکنینی باکئەپ — 0.8.0](docs/BACKUPS.md)
 
 - [ئامادەکردنی کۆپێی گەڕاندنەوە و یەکگرتنەوەی داتا — 0.10.0](docs/RECOVERY.md)
+
+- [هەناردەی کاڵاکان بۆ CSV — 0.12.0](docs/CATALOG_EXPORT.md)
