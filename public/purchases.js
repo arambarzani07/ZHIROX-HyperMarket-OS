@@ -76,13 +76,52 @@
   }catch(e){if(current(g))status(e.message,true);}
   finally{if(current(g)){busy=false;rows();}}
  }
+ async function loadPostingConfig(){
+  const g=generation;
+  try{
+   const config=await window.zhiroxRequest('/api/purchases/config');
+   if(!current(g))return;
+   postingEnabled=config.posting_enabled===true;
+   const note=q('#purchase-post-config');
+   if(note)note.textContent=postingEnabled?'تۆمارکردنی کڕینی نەقد لەم دامەزراندنەدا چالاکە؛ پێش تۆمارکردن پارەدان پشتڕاست بکەرەوە.':'تۆمارکردنی کڕین هێشتا قوفڵە؛ تەنها پێشبینین چالاکە.';
+  }catch(e){if(current(g))status(e.message,true);}
+ }
+ async function postCash(){
+  const g=generation;
+  if(!postingEnabled||!previewPayload||busy)return;
+  const confirm=q('#purchase-cash-confirm');
+  if(!postAttempt&&!confirm?.checked){status('سەرەتا پارەدانی تەواوی پسوولە پشتڕاست بکەرەوە.',true);return;}
+  if(!postAttempt){
+   const invoice_no=q('#purchase-invoice')?.value?.trim()||'';
+   if(invoice_no.length>80){status('ژمارەی پسوولە زۆر درێژە',true);return;}
+   postAttempt={...previewPayload,request_id:crypto.randomUUID(),invoice_no};
+  }
+  busy=true;rows();q('#purchase-post-button').disabled=true;
+  status('پشتڕاستکردنەوەی تۆمارکردنی کڕین…');
+  try{
+   const answer=await window.zhiroxRequest('/api/purchases',{method:'POST',body:JSON.stringify(postAttempt)});
+   if(!current(g))return;
+   const doc=answer.purchase;postAttempt=null;previewPayload=null;items=[];rows();
+   q('#purchase-post-panel').hidden=true;
+   q('#purchase-result').innerHTML='<section class="panel"><h2>پسوولەی کڕین تۆمار کرا</h2><p>ژمارەی کڕین: <strong>'+esc(doc.purchase_no)+'</strong></p><p>دابینکەر: '+esc(doc.supplier_name)+'</p><p>کۆی کڕین: <strong>'+money(doc.total,doc.currency)+' '+esc(doc.currency)+'</strong></p><p class="sub">کڕین و جووڵەی کۆگا لە SQLite تۆمار کراون. هێشتا تۆماری پارەدان لە سندوقی سەربەخۆ نییە؛ پشکنینی Cash Ledger لە قۆناغی داهاتوودا پێویستە.</p></section>';
+   status(answer.replayed?'داواکاری پێشتر تۆمار کرابوو؛ پسوولەی هەمان کڕین گەڕێندرایەوە.':'تۆمارکردنی کڕین سەرکەوتوو بوو.');
+  }catch(e){
+   if(!current(g))return;
+   if(e.responseReceived&&e.status>=400&&e.status<500){
+    postAttempt=null;invalidate();
+    status(e.message+'؛ پێشبینین دووبارە بکەرەوە.',true);
+   }else{
+    status('ئەنجامی تۆمارکردن دڵنیا نییە؛ هەمان داواکاری وەک خۆی دووبارە بنێرەوە. پەڕەکە نوێ مەکەرەوە.',true);
+   }
+  }finally{if(current(g)){busy=false;rows();const b=q('#purchase-post-button');if(b)b.disabled=false;}}
+ }
  function render(){
   clear();q('#hs-actions').replaceChildren();q('#hs-save').hidden=true;
   if(!window.zhiroxAuth.can('purchases.preview')){
    q('#hs-view').innerHTML='<section class="panel"><h2>کڕین</h2><p>دەسەڵاتی ئەم بەشەت نییە.</p></section>';return;
   }
-  q('#hs-view').innerHTML='<section class="panel"><h2>پێشبینینی وەرگرتنی کاڵا</h2><p class="sub">قۆناغی ئامادەکاریی کڕینە. بڕی کڕین و کۆی نرخ حساب دەکرێت، بەڵام هیچ پسوولە، پارەدان، کۆگا یان کلاود ناگۆڕدرێت.</p><form id="purchase-supplier-search" class="toolbar"><input name="q" maxlength="100" aria-label="گەڕانی دابینکەر" placeholder="ناو، کۆد یان مۆبایل…"><button class="btn" type="submit">گەڕانی دابینکەر</button></form><label>دابینکەر<select id="purchase-supplier"><option value="">بارکردن…</option></select></label><p class="sub" id="purchase-currency"></p><form id="purchase-product-search" class="toolbar"><input name="q" maxlength="100" aria-label="گەڕانی کاڵا" placeholder="ناو، SKU یان بارکۆد…"><button class="btn" type="submit">گەڕانی کاڵا</button></form><div class="fields"><label>کاڵا<select id="purchase-product"><option value="">سەرەتا دابینکەر هەڵبژێرە</option></select></label><label>یەکە<select id="purchase-unit"><option value="unit">دانە</option><option value="carton">کارتۆن</option></select></label><label>ژمارە<input id="purchase-quantity" type="number" min="1" max="1000000" step="1" value="1"></label><label>نرخی کڕینی هەر یەکە<input id="purchase-cost" inputmode="decimal" value="0"></label><button class="btn" id="purchase-add" type="button">زیادکردنی هێڵ بۆ پێشبینین</button></div><div class="tablewrap"><table><thead><tr><th>کاڵا</th><th>یەکە</th><th>ژمارە</th><th>نرخی کڕین</th><th>کردار</th></tr></thead><tbody id="purchase-items"></tbody></table></div><button class="btn primary" type="button" id="purchase-preview-button">پێشبینینی کۆی کڕین و کۆگا</button><p id="purchase-status" role="status"></p></section><div id="purchase-result"></div>';
-  currencies();rows();void loadSuppliers();
+  q('#hs-view').innerHTML='<section class="panel"><h2>پێشبینینی وەرگرتنی کاڵا</h2><p class="sub">قۆناغی ئامادەکاریی کڕینە. بڕی کڕین و کۆی نرخ حساب دەکرێت، بەڵام هیچ پسوولە، پارەدان، کۆگا یان کلاود ناگۆڕدرێت.</p><form id="purchase-supplier-search" class="toolbar"><input name="q" maxlength="100" aria-label="گەڕانی دابینکەر" placeholder="ناو، کۆد یان مۆبایل…"><button class="btn" type="submit">گەڕانی دابینکەر</button></form><label>دابینکەر<select id="purchase-supplier"><option value="">بارکردن…</option></select></label><p class="sub" id="purchase-currency"></p><form id="purchase-product-search" class="toolbar"><input name="q" maxlength="100" aria-label="گەڕانی کاڵا" placeholder="ناو، SKU یان بارکۆد…"><button class="btn" type="submit">گەڕانی کاڵا</button></form><div class="fields"><label>کاڵا<select id="purchase-product"><option value="">سەرەتا دابینکەر هەڵبژێرە</option></select></label><label>یەکە<select id="purchase-unit"><option value="unit">دانە</option><option value="carton">کارتۆن</option></select></label><label>ژمارە<input id="purchase-quantity" type="number" min="1" max="1000000" step="1" value="1"></label><label>نرخی کڕینی هەر یەکە<input id="purchase-cost" inputmode="decimal" value="0"></label><button class="btn" id="purchase-add" type="button">زیادکردنی هێڵ بۆ پێشبینین</button></div><div class="tablewrap"><table><thead><tr><th>کاڵا</th><th>یەکە</th><th>ژمارە</th><th>نرخی کڕین</th><th>کردار</th></tr></thead><tbody id="purchase-items"></tbody></table></div><button class="btn primary" type="button" id="purchase-preview-button">پێشبینینی کۆی کڕین و کۆگا</button><p class="sub" id="purchase-post-config">پشکنینی دۆخی تۆمارکردن…</p><div id="purchase-post-panel" hidden><label>ژمارەی پسوولەی دابینکەر (ئارەزوومەندانە)<input id="purchase-invoice" maxlength="80"></label><label><input type="checkbox" id="purchase-cash-confirm"> پشتڕاست دەکەمەوە هەموو بڕی ئەم کڕینە بە نەقد دراوە.</label><button class="btn primary" type="button" id="purchase-post-button">تۆمارکردنی کڕینی نەقد</button><p class="sub">ئەمە کردارێکی ڕاستەقینەیە؛ بڕی کۆگا زیاد دەکات و پسوولە و ledger دروست دەکات.</p></div><p id="purchase-status" role="status"></p></section><div id="purchase-result"></div>';
+  currencies();rows();void loadSuppliers();void loadPostingConfig();
  }
  root.addEventListener('submit',e=>{
   if(e.target.id==='purchase-supplier-search'){e.preventDefault();if(!busy)void loadSuppliers(new FormData(e.target).get('q')||'');}
@@ -96,6 +135,7 @@
   if(b.id==='purchase-add'&&!busy&&!postAttempt){try{add();}catch(error){status(error.message,true);}}
   if(b.dataset.removePurchase!==undefined&&!busy&&!postAttempt){items.splice(Number(b.dataset.removePurchase),1);rows();invalidate();}
   if(b.id==='purchase-preview-button')void preview();
+  if(b.id==='purchase-post-button')void postCash();
  });
  window.zhiroxPurchases={render,clear,focus(){q('#purchase-supplier')?.focus();}};
 })();
