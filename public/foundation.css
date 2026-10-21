@@ -1,0 +1,8 @@
+#hyper-cards input.small-quantity{width:76px;min-width:65px}
+#hyper-cards #local-product-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+#hyper-cards #local-product-error{color:light-dark(#9a2525,#ffc0c0)}
+#hyper-cards #local-cart input,#hyper-cards #local-cart select{font-size:14px;padding:7px}
+#receipt-print{direction:rtl;font:14px/1.8 Tahoma,Arial,sans-serif;margin:20px auto;max-width:560px;padding:24px;border:1px solid #aaa;background:#fff;color:#111}
+#receipt-print table{border-collapse:collapse;width:100%;text-align:right}#receipt-print th,#receipt-print td{padding:8px;border-bottom:1px solid #ccc}#receipt-print button{padding:9px 18px;margin:7px;font:inherit}
+@media(max-width:510px){#hyper-cards #local-product-form{grid-template-columns:1fr}}
+@media print{body>*{display:none!important}body>#receipt-print:not([hidden]){display:block!important;border:0;margin:0;padding:0;max-width:none;font-size:12px}#receipt-print button{display:none!important}@page{margin:8mm}}
