@@ -1,6 +1,6 @@
 # Supabase one-way sync — 0.3.0
 
-Local SQLite remains the operational database. An owner can inspect **بەڕێوەبردن → داتا و باکئەپ** for pending count, last successful contact, next attempt and a sanitized error. **هاوکات بکە ئێستا** retries immediately. Local cash sales continue without internet.
+Local SQLite remains the operational database. An owner can inspect **بەڕێوەبردن → داتا و باکئەپ** for pending count, last successful contact, next attempt and a sanitized error. **هاوکات بکە ئێستا** retries immediately. Local cash sales continue without internet. An invalid cloud configuration disables synchronization and reports an error without preventing local startup.
 
 ## Implemented
 
