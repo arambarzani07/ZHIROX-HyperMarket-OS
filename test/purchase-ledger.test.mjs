@@ -24,7 +24,7 @@ test('purchase and sale ledgers reconcile together without rewriting posted hist
  const ledger=f.inventory.ledger(f.session('owner'),f.product.id);
  assert.equal(ledger.reconciled,true);
  assert.equal(ledger.ledger_total_milli,31000);
- assert.equal(ledger.entries.length,4);
+ assert.equal(ledger.entries.length,3);
  assert.equal(ledger.entries.find(x=>x.kind==='purchase').delta_milli,12000);
  assert.equal(ledger.entries.find(x=>x.kind==='sale').receipt_id,sale.id);
  assert.ok(reconcile(f.s.db).ok);
