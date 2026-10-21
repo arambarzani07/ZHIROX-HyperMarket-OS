@@ -63,5 +63,5 @@ export function reconcile(db){
   const wanted=demand.get(sale)||new Map(),actual=movements.get(sale)||new Map();
   for(const product of new Set([...wanted.keys(),...actual.keys()]))if(wanted.get(product)!==actual.get(product))failures.sale_movements++;
  }
- return{ok:Object.values(failures).every(n=>n===0),model:'opening-stock-and-cash-sales-and-purchases-v2',checked:{products:products.size,receipts:sales.size,sale_items:itemCount,stock_movements:movementCount,purchases:purchaseCount,purchase_items:purchaseItemCount,purchase_stock_movements:purchaseMovementCount},failures};
+ return{ok:Object.values(failures).every(n=>n===0),model:purchaseCount?'opening-stock-and-cash-sales-and-purchases-v2':'opening-stock-and-cash-sales-v1',checked:{products:products.size,receipts:sales.size,sale_items:itemCount,stock_movements:movementCount,...(purchaseCount?{purchases:purchaseCount,purchase_items:purchaseItemCount,purchase_stock_movements:purchaseMovementCount}:{})},failures};
 }
