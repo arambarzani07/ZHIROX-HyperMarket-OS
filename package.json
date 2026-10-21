@@ -1,6 +1,6 @@
 {
   "name": "zhirox-hypermarket-os",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
   "engines": {
@@ -10,7 +10,9 @@
     "start": "node src/server.mjs",
     "dev": "node scripts/preview.mjs",
     "test": "node --test test/*.test.mjs",
-    "check": "node --check src/server.mjs && node --check src/store.mjs && node --check src/auth.mjs && node --check src/sync.mjs && node --check scripts/prepare-sync.mjs && node --check public/shell.js && node --check public/foundation.js && node --check public/auth.js && node --check public/sync.js && node scripts/verify-design.mjs",
-    "sync:prepare": "node scripts/prepare-sync.mjs"
+    "check": "node --check src/server.mjs && node --check src/data-directory.mjs && node --check scripts/check-runtime.mjs && node --check scripts/package-windows.mjs && node --check src/store.mjs && node --check src/auth.mjs && node --check src/sync.mjs && node --check scripts/prepare-sync.mjs && node --check public/shell.js && node --check public/foundation.js && node --check public/auth.js && node --check public/sync.js && node scripts/verify-design.mjs",
+    "sync:prepare": "node scripts/prepare-sync.mjs",
+    "doctor": "node scripts/check-runtime.mjs",
+    "package:windows": "node scripts/package-windows.mjs"
   }
 }
