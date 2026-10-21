@@ -14,6 +14,7 @@
   const currency=chosen()?.currency||'IQD';
   body.innerHTML=items.length?items.map((x,i)=>'<tr><td>'+esc(x.name)+'<div class="sub">'+esc(x.sku)+'</div></td><td>'+(x.unit==='carton'?'کارتۆن':'دانە')+'</td><td>'+x.quantity+'</td><td dir="ltr">'+money(x.unit_cost,currency)+'</td><td><button class="btn" type="button" data-remove-purchase="'+i+'">لابردن</button></td></tr>').join(''):'<tr><td colspan="5">هێشتا هیچ کاڵایەک زیاد نەکراوە.</td></tr>';
   q('#purchase-preview-button').disabled=busy||!items.length||!supplierId;
+  q('#purchase-add').disabled=busy||!chosen();
   q('#purchase-supplier').disabled=busy;q('#purchase-product').disabled=busy;
   body.querySelectorAll('[data-remove-purchase]').forEach(button=>button.disabled=busy);
  }
