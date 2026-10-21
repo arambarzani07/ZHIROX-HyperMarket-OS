@@ -1,3 +1,4 @@
+import {openPosCatalog} from './pos-catalog.mjs';
 import {catalogPage} from './catalog.mjs';
 import {openProductImport} from './product-import.mjs';
 import {exportCatalog} from './catalog-export.mjs';
@@ -20,7 +21,7 @@ const port=Number(process.env.PORT||3187),host=process.env.ZHIROX_BIND||'127.0.0
 if(!Number.isInteger(port)||port<1||port>65535)throw new Error('Invalid port');
 if(!['127.0.0.1','localhost'].includes(host)&&process.env.ZHIROX_PREVIEW!=='1')throw new Error('Public binding is disabled for this local foundation');
 const dataDir=resolveDataDirectory();await mkdir(dataDir,{recursive:true});const store=openStore(join(dataDir,'zhirox.sqlite'));const auth=openAuth(store.db);const checkout=openCheckout(store);const receipts=openReceipts(store);const inventory=openInventory(store);const reports=openReports(store);const backups=openBackups(join(dataDir,'backups'));
-const productImport=openProductImport(store);
+const productImport=openProductImport(store),posCatalog=openPosCatalog(store);
 let sync;
 try{sync=openSync(store,readSyncConfig(join(dataDir,'sync-device.json')));}catch{
  const local=openSync(store,null);sync={...local,status:()=>({...local.status(),error:'configuration_invalid'}),async run(){throw new DomainError('ڕێکخستنی کلاود نادروستە؛ کارکردنی ناوخۆ بەردەوامە',409);}};
@@ -58,6 +59,8 @@ const server=createServer(async(req,res)=>{res.setHeader('X-Content-Type-Options
  const importPath=url.pathname.match(/^\/api\/products\/import(?:\/(preview))?$/);
  if(importPath&&req.method==='POST'){auth.requirePermission(session,'products.write');const input=await body(req,17*1024*1024),fresh=auth.session(token);auth.requirePermission(fresh,'products.write');if(req.headers['x-zhirox-csrf']!==fresh.csrf)throw new DomainError('دانیشتن گۆڕاوە',403);return json(res,importPath[1]?200:201,importPath[1]?productImport.preview(fresh,input):productImport.apply(fresh,input));}
  if(url.pathname==='/api/products/export.csv'&&req.method==='GET'){if(url.search)throw new DomainError('هەناردەی کاڵا فلتەری گەڕان وەرناگرێت');const result=exportCatalog(store,session);res.writeHead(200,{'Content-Type':'text/csv; charset=utf-8','Content-Disposition':`attachment; filename="zhirox-products-${result.as_of.slice(0,10)}.csv"`,'Content-Length':Buffer.byteLength(result.csv),'Cache-Control':'no-store','X-Zhirox-Product-Count':String(result.products),'X-Zhirox-Exported-At':result.as_of});res.end(result.csv);return;}
+ if(url.pathname==='/api/pos/barcode'&&req.method==='GET'){if([...url.searchParams.keys()].some(k=>k!=='code'))throw new DomainError('پارامەتری بارکۆد نادروستە');return json(res,200,posCatalog.barcode(session,url.searchParams.get('code')));}
+ if(url.pathname==='/api/pos/products'&&req.method==='POST'){auth.requirePermission(session,'sales.create');const input=await body(req),fresh=auth.session(token);auth.requirePermission(fresh,'sales.create');if(req.headers['x-zhirox-csrf']!==fresh.csrf)throw new DomainError('دانیشتن گۆڕاوە',403);return json(res,200,posCatalog.products(fresh,input));}
  if(url.pathname==='/api/catalog'&&req.method==='GET')return json(res,200,catalogPage(store,session,Object.fromEntries(url.searchParams)));
  if(url.pathname==='/api/products'&&req.method==='GET'){auth.requirePermission(session,'products.read');let products=store.list(url.searchParams.get('q')||'');if(session.user.role==='cashier')products=products.map(({unit_cost,...p})=>p);return json(res,200,{products});}
  if(url.pathname==='/api/products'&&req.method==='POST'){auth.requirePermission(session,'products.write');return json(res,201,{product:store.create(await body(req))});}
