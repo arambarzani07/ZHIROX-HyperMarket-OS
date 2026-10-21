@@ -3,13 +3,14 @@ import { readFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join, extname } from 'node:path';
 import { openStore,DomainError } from './store.mjs';
+import {resolveDataDirectory} from './data-directory.mjs';
 import { openAuth } from './auth.mjs';
 import { openSync,readSyncConfig } from './sync.mjs';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const port=Number(process.env.PORT||3187),host=process.env.ZHIROX_BIND||'127.0.0.1';
 if(!Number.isInteger(port)||port<1||port>65535)throw new Error('Invalid port');
 if(!['127.0.0.1','localhost'].includes(host)&&process.env.ZHIROX_PREVIEW!=='1')throw new Error('Public binding is disabled for this local foundation');
-const dataDir=resolve(process.env.ZHIROX_DATA_DIR||join(root,'data'));await mkdir(dataDir,{recursive:true});const store=openStore(join(dataDir,'zhirox.sqlite'));const auth=openAuth(store.db);
+const dataDir=resolveDataDirectory();await mkdir(dataDir,{recursive:true});const store=openStore(join(dataDir,'zhirox.sqlite'));const auth=openAuth(store.db);
 let sync;
 try{sync=openSync(store,readSyncConfig(join(dataDir,'sync-device.json')));}catch{
  const local=openSync(store,null);sync={...local,status:()=>({...local.status(),error:'configuration_invalid'}),async run(){throw new DomainError('ڕێکخستنی کلاود نادروستە؛ کارکردنی ناوخۆ بەردەوامە',409);}};
