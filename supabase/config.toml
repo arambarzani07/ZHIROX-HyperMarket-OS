@@ -1,0 +1,11 @@
+# Local project identifier; the hosted target is declared under remotes.production.
+project_id = "ZHIROX-HyperMarket-OS"
+
+[db]
+major_version = 17
+
+[db.seed]
+enabled = false
+
+[remotes.production]
+project_id = "qcfmlyyzfykzszvtllrw"
