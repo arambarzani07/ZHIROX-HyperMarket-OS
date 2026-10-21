@@ -40,6 +40,10 @@ test('purchase preview HTTP is CSRF-scoped, role-gated, and never posts stock or
  assert.equal(success.status,200);
  const body=await success.json();assert.equal(body.preview_only,true);assert.equal(body.total,11000);
  assert.equal(body.stock_after[0].after_milli,17000);
+ const gated=await json('/api/purchases','POST',{...input,request_id:randomUUID()},h);
+ assert.equal(gated.status,409); // Operational purchase posting is disabled unless explicitly enabled.
+ const postingConfig=await(await fetch(base+'/api/purchases/config',{headers:{Cookie:cookie}})).json();
+ assert.equal(postingConfig.posting_enabled,false);
  const after=await(await fetch(base+'/api/health',{headers:{Cookie:cookie}})).json();
  assert.deepEqual(after,before);
  const user=await json('/api/users','POST',{name:'Cashier QA',username:'cashier',role:'cashier',password:'cashier-preview-password'},h);
