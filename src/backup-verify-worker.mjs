@@ -1,5 +1,6 @@
 import {parentPort,workerData} from 'node:worker_threads';
 import {DatabaseSync} from 'node:sqlite';
+import {reconcile} from './reconcile.mjs';
 let db,result;
 try{
  db=new DatabaseSync(workerData.file,{readOnly:true,allowExtension:false});
@@ -13,6 +14,7 @@ try{
   else if(db.prepare('PRAGMA foreign_key_check').get())result={ok:false,reason:'foreign_key_failed'};
   else result={ok:true,integrity:'ok',schema_ok:true,foreign_keys_ok:true,counts:{products:db.prepare('SELECT count(*) n FROM products').get().n,sales:db.prepare('SELECT count(*) n FROM sales').get().n,users:db.prepare('SELECT count(*) n FROM auth_users').get().n}};
  }
+ if(result.ok&&workerData.reconcile){const reconciliation=reconcile(db);result={...result,ok:reconciliation.ok,...(!reconciliation.ok?{reason:'reconciliation_failed'}:{}),reconciliation};}
 }catch{result={ok:false,reason:'unreadable'};}
 finally{db?.close();}
 parentPort.postMessage(result);
