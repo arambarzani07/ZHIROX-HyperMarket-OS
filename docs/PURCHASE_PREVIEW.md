@@ -1,36 +1,33 @@
-# پێشبینینی پسوولەی کڕین — قۆناغی 0.21.0 (لە ژێر کاردا)
+# کڕینی نەقد و وەرگرتنی کاڵا — قۆناغی 0.21.0
 
-ئەم قۆناغە بەشی «کڕین»ی دیزاینی پەسەندکراوی کوردی RTL بە کۆدی ڕاستەقینە پەیوەست دەکات، بەڵام **هێشتا هیچ کڕینێک تۆمار ناکات**.
+## دۆخی ڕاستەقینە
 
-## ئەوەی ئێستا کار دەکات
+ڕووکاری کوردی RTL لە بەشی «کڕین»ی دیزاینی قوفڵکراو پێشبینینی دابینکەر، کاڵا، یەکە و نرخی کڕین دەکات. `POST /api/purchases/preview` هێشتا تەنها خوێندنەوەیە.
 
-- خاوەن/بەڕێوەبەر دەتوانن دابینکەر و کاڵا لە داتابەیسی ڕاستەقینە هەڵبژێرن.
-- لە فۆڕمی کڕین، هەر هێڵێک product_id، یەکەی دانە/کارتۆن، ژمارە و نرخی کڕینی هەر یەکەی هەیە.
-- POST /api/purchases/preview تەنها بۆ دەسەڵاتی purchases.preview ـە.
-- سێرڤەر بۆ هەر هێڵێک دراو، کۆی integer/minor-unit و زیادبوونی هەژمارکراوی کۆگا لە داتای SQLite دووبارە دەپشکنێتەوە.
-- هێڵە دووبارەکانی هەمان کاڵا بۆ زیادبوونی کۆگا کۆ دەکرێنەوە؛ بڕی دوای کڕین لە هەمان read snapshot هەژمار دەکرێت.
-- IQD بە دینار، USD بە سنت هەڵدەژمێردرێت؛ دراوی تێکەڵ و integer overflow ڕەت دەکرێنەوە.
-- مافی کۆتا نووسین نییە: هیچ purchase، stock، cash، outbox، audit، supplier balance یان cloud record دروست/گۆڕان ناکات.
+کۆدی تۆمارکردنی کڕینی نەقد زیاد کراوە: `POST /api/purchases`، `GET /api/purchases`، `GET /api/purchases/:id`. تۆمارکردن بە بنەڕەت قوفڵە و تەنها بە `ZHIROX_PURCHASE_POSTING=enabled` لە ژینگەی سێرڤەر ڕێگە دەدرێت. ناوی هەژمار و CSRF و دەسەڵات لە سێرڤەر دەپشکنرێن. خاوەن/بەڕێوەبەر مافی کڕینی نەقدیان هەیە؛ کاشێر و کارمەندی کۆگا نییانە.
 
-## بۆچی تەنها preview ـە؟
+## Transaction و مێژوو
 
-Supabase ـی zhirox-sync لە ئێستادا تەنها دوو kind ـی product.created و sale.created وەردەگرێت. ئەگەر وەرگرتنی کاڵا کۆگا زیاد بکات بەبێ purchase.created، نێوان SQLite و cloud stock ناکۆکی ڕوودەدات. ئەم قۆناغە هیچ نووسینێک ناکات تا ledger ـی immutable، outbox، sync ـی cloud و تاقیکردنەوەی rollback/idempotency بە یەکەوە ئامادەبن.
+- خشتەکانی `purchases`، `purchase_items` و `purchase_stock_ledger` زیادکراون؛ خشتەی کۆنی `stock_ledger` بە هیچ شێوەیەک نەسڕاوەتەوە و نەنووسراوەتەوە.
+- پسوولە، هێڵەکان، زیادبوونی بڕی کاڵا، Ledger، Outbox و Audit لە یەک `BEGIN IMMEDIATE` transaction ـدان.
+- ناسنامەی جێگیری `request_id` دووبارەفرۆشتن/دووبارەکڕینی هەمان داواکاری ڕادەگرێت. ناردنەوەی هەمان داواکاری پسوولەی پێشوو دەگەڕێنێتەوە. هەمان ناسنامە بە ناوەڕۆکی تر/کارمەندی تر ڕەت دەکرێتەوە.
+- هێڵە دووبارەکانی هەمان کاڵا بە هەموو بڕەکانیان یەکدەخرێن و لە بڕی کۆگا حساب دەکرێن. IQD بە دینار و USD بە سنت بە integer هەڵدەگیرێت.
+- هەموو تۆمارەکانی کڕین و Ledger ـی کڕین append-only و immutable ـن. Inventory و read-only backup reconciliation هەردوو Ledger ـی کڕین و فرۆشتن هەژمار دەکەن.
 
-## پێش ئەوەی posting چالاک بکرێت
+## Supabase
 
-1. Purchase header/items بە request_id ـی یەکتا، ناسنامەی actor، invoice reference و supplier snapshot و ledger ـی یەکپارچە زیاد بکرێن.
-2. stock_ledger بە migration ـی safe بۆ kind=purchase فراوان بکرێت؛ ئەوەی هەیە نەسڕدرێتەوە.
-3. Local purchase + stock + outbox لە یەک BEGIN IMMEDIATE transaction، و replay/rollback دەبێت تاقی بکرێنەوە.
-4. Cloud ـی zhirox_ingest و خشتەکانی purchase بە additive migration فراوان بکرێن، دوای ئەوە تاقیکردنەوەی integration لە rollback ـدا بکرێت.
-5. Read-only reconciliation، recovery و backup verification بۆ purchase stock movement نوێ بکرێنەوە.
-6. تەنها پاش ئەم تاقیکردنەوانە دەتوانرێت دوگمەی «تۆمارکردنی پسوولەی کڕین» زیاد بکرێت.
+لە هەژماری Supermark، پڕۆژەی `qcfmlyyzfykzszvtllrw`، migration ـی `zhirox_cash_purchase_sync` زیاد کرا. خشتەکانی `zhirox_purchases` و `zhirox_purchase_stock_ledger` بە RLS و default-deny زیاد بوون. RPC ـی `zhirox_ingest` لەگەڵ `purchase.created`، دۆخی device/market، sequence، replay، پڕۆفایلی کاڵا و بڕی کۆگا دەپشکنێت. تاقیکردنەوەی داتای تاقیکردنەوەی product/purchase/replay/checkpoint لە Cloud بە `BEGIN ... ROLLBACK` سەرکەوتوو بوو و هیچ تۆماری تاقیکردنەوە نەمابوو.
 
-دەسکاریکردنی design/approved-card-home.html و design/manifest.json قەدەغەیە، تا خاوەن بڕیارێکی دیکە بدات.
+## سنووری گرنگ
+
+- Cash Purchase لێرەدا واتای «هەموو بڕەکە وەک نەقد پارەدراو تۆمار کراوە». **Cash Drawer / Cash Ledger ـی سەربەخۆ لەم قۆناغەدا کەم ناکرێتەوە**. پێش بەکارهێنانی مارکێت دەبێت تۆماری دارایی و ڕاپۆرتی سندوق بە یەک transaction پەیوەست بکرێت.
+- کڕینی قەرزدار، پارەدان بۆ دابینکەر، گەڕاندنەوەی کڕین، Windows/Hardware QA و cloud restore/multi-device هێشتا ماون.
+- بەبێ `ZHIROX_PURCHASE_POSTING=enabled`، دوگمەی تۆمارکردن لە ڕووکار نیشان نادرێت و API بە 409 ڕەت دەکرێتەوە.
+- دیزاینی `design/approved-card-home.html` و `design/manifest.json` قوفڵن و نەگۆڕاون.
 
 ## QA
 
-- test/purchase-preview.test.mjs: ڕێژەی دانە/کارتۆن، دووبارەبوونی هێڵ، دراو و دەسەڵات، ناوەڕۆکی زۆر گەورە، و داتای نەگۆڕاو.
-- test/purchase-preview-http.test.mjs: دانیشتنی ڕاستەقینە، CSRF و ڕۆڵەکان، و پشکنینی summary پێش/دوای preview.
-- npm run check syntax ـی سێرڤەر و ڕووکاری نوێ لەگەڵ design checksum دەپشکنێت.
-
-Windows، پڕینتەر، بڕی ڕاستەقینەی کڕین و posting هێشتا نەکراون.
+- `test/purchase-preview.test.mjs` و `test/purchase-preview-http.test.mjs`: دراو، بڕ، CSRF، دەسەڵات و gate.
+- `test/purchase-posting.test.mjs` و `test/purchase-posting-http.test.mjs`: transaction، replay، rollback، stock و HTTP.
+- `test/purchase-ledger.test.mjs`: ledger، بەشێک لە مێژووی فرۆشتن و reconcile.
+- `npm run check` و `npm test` لە GitHub Actions پشکنین دەکرێن. پشکنینی بینراوی هەژماری چووەژوورەوە لە Windows هێشتا نەکراوە.
