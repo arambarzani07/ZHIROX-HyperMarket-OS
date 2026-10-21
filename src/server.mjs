@@ -10,7 +10,10 @@ const port=Number(process.env.PORT||3187),host=process.env.ZHIROX_BIND||'127.0.0
 if(!Number.isInteger(port)||port<1||port>65535)throw new Error('Invalid port');
 if(!['127.0.0.1','localhost'].includes(host)&&process.env.ZHIROX_PREVIEW!=='1')throw new Error('Public binding is disabled for this local foundation');
 const dataDir=resolve(process.env.ZHIROX_DATA_DIR||join(root,'data'));await mkdir(dataDir,{recursive:true});const store=openStore(join(dataDir,'zhirox.sqlite'));const auth=openAuth(store.db);
-const sync=openSync(store,readSyncConfig(join(dataDir,'sync-device.json')));
+let sync;
+try{sync=openSync(store,readSyncConfig(join(dataDir,'sync-device.json')));}catch{
+ const local=openSync(store,null);sync={...local,status:()=>({...local.status(),error:'configuration_invalid'}),async run(){throw new DomainError('ڕێکخستنی کلاود نادروستە؛ کارکردنی ناوخۆ بەردەوامە',409);}};
+}
 const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.json':'application/json; charset=utf-8'};
 const json=(res,status,body)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(body));};
 async function body(req){if(!/^application\/json(?:;|$)/i.test(req.headers['content-type']||''))throw new DomainError('JSON پێویستە',415);let buffer='';for await(const chunk of req){buffer+=chunk;if(Buffer.byteLength(buffer)>131072)throw new DomainError('داواکاری زۆر گەورەیە',413);}try{return JSON.parse(buffer);}catch{throw new DomainError('داواکاری نادروستە');}}
