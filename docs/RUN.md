@@ -48,3 +48,5 @@ npm test
 - [ئامادەکردنی کۆپێی گەڕاندنەوە — 0.9.0](RECOVERY.md)
 
 - [هەناردەی لیستی کاڵاکان بۆ CSV](CATALOG_EXPORT.md)
+
+- [پشکنین و هاوردەکردنی کاڵا لە CSV](PRODUCT_IMPORT.md)
