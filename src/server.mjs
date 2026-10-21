@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join, extname } from 'node:path';
 import { openStore,DomainError } from './store.mjs';
 import {resolveDataDirectory} from './data-directory.mjs';
+import {openInventory} from './inventory.mjs';
 import {openReceipts} from './receipts.mjs';
 import {openCheckout} from './checkout.mjs';
 import { openAuth } from './auth.mjs';
@@ -12,7 +13,7 @@ const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const port=Number(process.env.PORT||3187),host=process.env.ZHIROX_BIND||'127.0.0.1';
 if(!Number.isInteger(port)||port<1||port>65535)throw new Error('Invalid port');
 if(!['127.0.0.1','localhost'].includes(host)&&process.env.ZHIROX_PREVIEW!=='1')throw new Error('Public binding is disabled for this local foundation');
-const dataDir=resolveDataDirectory();await mkdir(dataDir,{recursive:true});const store=openStore(join(dataDir,'zhirox.sqlite'));const auth=openAuth(store.db);const checkout=openCheckout(store);const receipts=openReceipts(store);
+const dataDir=resolveDataDirectory();await mkdir(dataDir,{recursive:true});const store=openStore(join(dataDir,'zhirox.sqlite'));const auth=openAuth(store.db);const checkout=openCheckout(store);const receipts=openReceipts(store);const inventory=openInventory(store);
 let sync;
 try{sync=openSync(store,readSyncConfig(join(dataDir,'sync-device.json')));}catch{
  const local=openSync(store,null);sync={...local,status:()=>({...local.status(),error:'configuration_invalid'}),async run(){throw new DomainError('ڕێکخستنی کلاود نادروستە؛ کارکردنی ناوخۆ بەردەوامە',409);}};
@@ -40,6 +41,8 @@ const server=createServer(async(req,res)=>{res.setHeader('X-Content-Type-Options
  if(url.pathname==='/api/users'&&req.method==='POST')return json(res,201,{user:await auth.create(session,await body(req))});
  if(url.pathname.startsWith('/api/users/')&&req.method==='PATCH')return json(res,200,{user:auth.update(session,url.pathname.split('/').pop(),await body(req))});
  if(url.pathname==='/api/access-audit'&&req.method==='GET')return json(res,200,{entries:auth.audit(session)});
+ if(url.pathname==='/api/inventory'&&req.method==='GET')return json(res,200,inventory.list(session,Object.fromEntries(url.searchParams)));
+ const ledgerPath=url.pathname.match(/^\/api\/inventory\/([^/]+)\/ledger$/);if(ledgerPath&&req.method==='GET')return json(res,200,inventory.ledger(session,ledgerPath[1],Object.fromEntries(url.searchParams)));
  if(url.pathname==='/api/products'&&req.method==='GET'){auth.requirePermission(session,'products.read');let products=store.list(url.searchParams.get('q')||'');if(session.user.role==='cashier')products=products.map(({unit_cost,...p})=>p);return json(res,200,{products});}
  if(url.pathname==='/api/products'&&req.method==='POST'){auth.requirePermission(session,'products.write');return json(res,201,{product:store.create(await body(req))});}
  if(url.pathname==='/api/cart'&&req.method==='GET'){auth.requirePermission(session,'sales.create');return json(res,200,{cart:checkout.read(session.user.id)});}
