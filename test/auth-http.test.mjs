@@ -32,6 +32,11 @@ test('HTTP permissions, CSRF, staff access and receipt ownership are enforced on
  const replay=await request('/api/cart/checkout',{method:'POST',session:staff.cashier,body:draft.data.cart});assert.equal(replay.data.receipt.id,checkout.data.receipt.id);
  assert.equal((await request('/api/cart/checkout',{method:'POST',session:owner,body:draft.data.cart})).status,403);
  assert.equal((await request('/api/cart',{session:staff.cashier})).data.cart.last_receipt.id,checkout.data.receipt.id);
+ assert.equal((await request('/api/receipts')).status,401);assert.equal((await request('/api/receipts',{session:staff.warehouse})).status,403);
+ const history=await request('/api/receipts',{session:owner});assert.equal(history.data.receipts.length,3);assert.equal((await request('/api/receipts',{session:staff.manager})).data.receipts.length,3);
+ const ownHistory=await request('/api/receipts?actor_id='+owner.user.id,{session:staff.cashier});assert.equal(ownHistory.data.receipts.length,2);assert.ok(ownHistory.data.receipts.every(r=>r.cashier==='cashier fixture'));
+ assert.equal((await request('/api/receipts?q=1',{session:staff.cashier})).data.receipts.length,0);assert.equal((await request('/api/receipts?limit=51',{session:owner})).status,400);
+ assert.equal((await request('/api/receipts?limit=1',{session:staff.cashier})).data.has_more,true);assert.equal(JSON.stringify(ownHistory.data).includes('unit_cost'),false);assert.equal(JSON.stringify(ownHistory.data).includes('request_payload'),false);
  assert.equal((await request('/api/users/'+staff.cashier.id,{method:'PATCH',session:owner,body:{active:false}})).status,200);
  assert.equal((await request('/api/products',{session:staff.cashier})).status,401);
  const audit=await request('/api/access-audit',{session:owner});assert.ok(audit.data.entries.some(x=>x.action==='user.access_changed'));assert.equal(JSON.stringify(audit.data).includes(password),false);
