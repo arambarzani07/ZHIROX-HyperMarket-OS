@@ -1,3 +1,4 @@
+import {exportCatalog} from './catalog-export.mjs';
 import {pipeline} from 'node:stream/promises';
 import {openBackups} from './backups.mjs';
 import { createServer } from 'node:http';
@@ -48,6 +49,7 @@ const server=createServer(async(req,res)=>{res.setHeader('X-Content-Type-Options
  if(url.pathname==='/api/reports/sales'&&req.method==='GET')return json(res,200,reports.sales(session,Object.fromEntries(url.searchParams)));
  if(url.pathname==='/api/inventory'&&req.method==='GET')return json(res,200,inventory.list(session,Object.fromEntries(url.searchParams)));
  const ledgerPath=url.pathname.match(/^\/api\/inventory\/([^/]+)\/ledger$/);if(ledgerPath&&req.method==='GET')return json(res,200,inventory.ledger(session,ledgerPath[1],Object.fromEntries(url.searchParams)));
+ if(url.pathname==='/api/products/export.csv'&&req.method==='GET'){if(url.search)throw new DomainError('هەناردەی کاڵا فلتەری گەڕان وەرناگرێت');const result=exportCatalog(store,session);res.writeHead(200,{'Content-Type':'text/csv; charset=utf-8','Content-Disposition':`attachment; filename="zhirox-products-${result.as_of.slice(0,10)}.csv"`,'Content-Length':Buffer.byteLength(result.csv),'Cache-Control':'no-store','X-Zhirox-Product-Count':String(result.products),'X-Zhirox-Exported-At':result.as_of});res.end(result.csv);return;}
  if(url.pathname==='/api/products'&&req.method==='GET'){auth.requirePermission(session,'products.read');let products=store.list(url.searchParams.get('q')||'');if(session.user.role==='cashier')products=products.map(({unit_cost,...p})=>p);return json(res,200,{products});}
  if(url.pathname==='/api/products'&&req.method==='POST'){auth.requirePermission(session,'products.write');return json(res,201,{product:store.create(await body(req))});}
  if(url.pathname==='/api/cart'&&req.method==='GET'){auth.requirePermission(session,'sales.create');return json(res,200,{cart:checkout.read(session.user.id)});}
