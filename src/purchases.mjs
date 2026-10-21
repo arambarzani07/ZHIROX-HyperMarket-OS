@@ -53,7 +53,7 @@ export function openPurchases(store){
    }
    const calc=calculatePurchase(db,{supplier_id:input.supplier_id,currency:input.currency,items:input.items});
    const id=randomUUID(),at=new Date().toISOString(),number=db.prepare('SELECT coalesce(max(purchase_no),0)+1 n FROM purchases').get().n;
-   db.prepare('INSERT INTO purchases VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run(id,input.request_id,fingerprint,number,session.user.id,calc.supplier.id,calc.supplier.code,calc.supplier.name,invoice,calc.currency,calc.total,calc.total,at);
+   db.prepare('INSERT INTO purchases VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)').run(id,input.request_id,fingerprint,number,session.user.id,calc.supplier.id,calc.supplier.code,calc.supplier.name,invoice,calc.currency,calc.total,calc.total,at);
    for(const x of calc.items){
     const result=db.prepare('UPDATE products SET stock_milli=stock_milli+? WHERE id=? AND stock_milli<=?').run(x.base_milli,x.product_id,Number.MAX_SAFE_INTEGER-x.base_milli);
     check(result.changes===1,'بڕی کۆگا لە سنوور دەرچوو',409);
