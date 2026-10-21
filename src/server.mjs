@@ -46,6 +46,7 @@ const server=createServer(async(req,res)=>{res.setHeader('X-Content-Type-Options
  if(url.pathname==='/api/users'&&req.method==='POST')return json(res,201,{user:await auth.create(session,await body(req))});
  if(url.pathname.startsWith('/api/users/')&&req.method==='PATCH')return json(res,200,{user:auth.update(session,url.pathname.split('/').pop(),await body(req))});
  if(url.pathname==='/api/access-audit'&&req.method==='GET')return json(res,200,{entries:auth.audit(session)});
+ if(url.pathname==='/api/reports/products'&&req.method==='GET')return json(res,200,reports.products(session,Object.fromEntries(url.searchParams)));
  if(url.pathname==='/api/reports/sales'&&req.method==='GET')return json(res,200,reports.sales(session,Object.fromEntries(url.searchParams)));
  if(url.pathname==='/api/inventory'&&req.method==='GET')return json(res,200,inventory.list(session,Object.fromEntries(url.searchParams)));
  const ledgerPath=url.pathname.match(/^\/api\/inventory\/([^/]+)\/ledger$/);if(ledgerPath&&req.method==='GET')return json(res,200,inventory.ledger(session,ledgerPath[1],Object.fromEntries(url.searchParams)));
