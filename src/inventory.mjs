@@ -37,9 +37,25 @@ export function openInventory(store){
    // Keep the current quantity, reconciliation and movement page in one WAL snapshot.
    db.exec('BEGIN');try{
     const p=product(id);check(p,'کاڵا نەدۆزرایەوە',404);
-    const ledger_total_milli=db.prepare('SELECT coalesce(sum(delta_milli),0) n FROM stock_ledger WHERE product_id=?').get(id).n;
+    const hasPurchases=Boolean(db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='purchase_stock_ledger'").get());
+    const ledger_total_milli=db.prepare(hasPurchases?'SELECT (SELECT coalesce(sum(delta_milli),0) FROM stock_ledger WHERE product_id=?) + (SELECT coalesce(sum(delta_milli),0) FROM purchase_stock_ledger WHERE product_id=?) n':'SELECT coalesce(sum(delta_milli),0) n FROM stock_ledger WHERE product_id=?').get(...(hasPurchases?[id,id]:[id])).n;
     const all=session.user.permissions.includes('receipts.all')?1:0,own=session.user.permissions.includes('receipts.own')?1:0;
-    const rows=db.prepare(`WITH movement AS (SELECT rowid sequence,id,delta_milli,kind,reference_id,created_at,sum(delta_milli) OVER(ORDER BY rowid ROWS UNBOUNDED PRECEDING) balance_after_milli FROM stock_ledger WHERE product_id=?) SELECT m.sequence,m.id,m.delta_milli,m.kind,m.created_at,m.balance_after_milli,s.id receipt_id,s.receipt_no FROM movement m LEFT JOIN sales s ON m.kind='sale' AND s.id=m.reference_id AND (?=1 OR (?=1 AND s.actor_id=?)) ${before===null?'':'WHERE m.sequence<?'} ORDER BY m.sequence DESC LIMIT ?`).all(id,all,own,session.user.id,...(before===null?[]:[before]),limit+1);
+    const purchaseSql=`WITH combined AS (
+      SELECT rowid native_row,id,delta_milli,kind,reference_id,created_at,0 source FROM stock_ledger WHERE product_id=?
+      UNION ALL
+      SELECT rowid native_row,id,delta_milli,'purchase' kind,reference_id,created_at,1 source FROM purchase_stock_ledger WHERE product_id=?
+     ), ordered AS (
+      SELECT row_number() OVER(ORDER BY created_at,source,native_row) sequence,id,delta_milli,kind,reference_id,created_at FROM combined
+     ), movement AS (
+      SELECT sequence,id,delta_milli,kind,reference_id,created_at,
+       sum(delta_milli) OVER(ORDER BY sequence ROWS UNBOUNDED PRECEDING) balance_after_milli FROM ordered
+     )
+     SELECT m.sequence,m.id,m.delta_milli,m.kind,m.created_at,m.balance_after_milli,
+      s.id receipt_id,s.receipt_no FROM movement m
+      LEFT JOIN sales s ON m.kind='sale' AND s.id=m.reference_id AND (?=1 OR (?=1 AND s.actor_id=?))
+      `+ (before===null?'':'WHERE m.sequence<?') +` ORDER BY m.sequence DESC LIMIT ?`;
+    const legacySql=`WITH movement AS (SELECT rowid sequence,id,delta_milli,kind,reference_id,created_at,sum(delta_milli) OVER(ORDER BY rowid ROWS UNBOUNDED PRECEDING) balance_after_milli FROM stock_ledger WHERE product_id=?) SELECT m.sequence,m.id,m.delta_milli,m.kind,m.created_at,m.balance_after_milli,s.id receipt_id,s.receipt_no FROM movement m LEFT JOIN sales s ON m.kind='sale' AND s.id=m.reference_id AND (?=1 OR (?=1 AND s.actor_id=?)) `+(before===null?'':'WHERE m.sequence<?')+` ORDER BY m.sequence DESC LIMIT ?`;
+    const rows=db.prepare(hasPurchases?purchaseSql:legacySql).all(...(hasPurchases?[id,id]:[id]),all,own,session.user.id,...(before===null?[]:[before]),limit+1);
     const has_more=rows.length>limit,entries=rows.slice(0,limit);db.exec('COMMIT');return{product:p,ledger_total_milli,reconciled:ledger_total_milli===p.stock_milli,entries,has_more,next_before:has_more?entries.at(-1).sequence:null};
    }catch(e){db.exec('ROLLBACK');throw e;}
   }
