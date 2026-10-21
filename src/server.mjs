@@ -40,6 +40,7 @@ const server=createServer(async(req,res)=>{res.setHeader('X-Content-Type-Options
   if(!['GET','HEAD'].includes(req.method)&&req.headers['x-zhirox-csrf']!==session.csrf)throw new DomainError('داواکاری پشتڕاست نەکراوەتەوە؛ پەڕەکە نوێ بکەرەوە',403);
  }
  if(url.pathname==='/api/auth/logout'&&req.method==='POST'){await body(req);auth.logout(session);res.setHeader('Set-Cookie','zhirox_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');return json(res,200,{ok:true});}
+ if(url.pathname==='/api/auth/password'&&req.method==='POST'){const result=await auth.changePassword(session,await body(req));res.setHeader('Set-Cookie','zhirox_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');return json(res,200,result);}
  if(url.pathname==='/api/users'&&req.method==='GET')return json(res,200,{users:auth.list(session)});
  if(url.pathname==='/api/users'&&req.method==='POST')return json(res,201,{user:await auth.create(session,await body(req))});
  if(url.pathname.startsWith('/api/users/')&&req.method==='PATCH')return json(res,200,{user:auth.update(session,url.pathname.split('/').pop(),await body(req))});
