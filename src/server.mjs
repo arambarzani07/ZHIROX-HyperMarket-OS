@@ -1,3 +1,5 @@
+import {pipeline} from 'node:stream/promises';
+import {openBackups} from './backups.mjs';
 import { createServer } from 'node:http';
 import { readFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -14,7 +16,7 @@ const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const port=Number(process.env.PORT||3187),host=process.env.ZHIROX_BIND||'127.0.0.1';
 if(!Number.isInteger(port)||port<1||port>65535)throw new Error('Invalid port');
 if(!['127.0.0.1','localhost'].includes(host)&&process.env.ZHIROX_PREVIEW!=='1')throw new Error('Public binding is disabled for this local foundation');
-const dataDir=resolveDataDirectory();await mkdir(dataDir,{recursive:true});const store=openStore(join(dataDir,'zhirox.sqlite'));const auth=openAuth(store.db);const checkout=openCheckout(store);const receipts=openReceipts(store);const inventory=openInventory(store);const reports=openReports(store);
+const dataDir=resolveDataDirectory();await mkdir(dataDir,{recursive:true});const store=openStore(join(dataDir,'zhirox.sqlite'));const auth=openAuth(store.db);const checkout=openCheckout(store);const receipts=openReceipts(store);const inventory=openInventory(store);const reports=openReports(store);const backups=openBackups(join(dataDir,'backups'));
 let sync;
 try{sync=openSync(store,readSyncConfig(join(dataDir,'sync-device.json')));}catch{
  const local=openSync(store,null);sync={...local,status:()=>({...local.status(),error:'configuration_invalid'}),async run(){throw new DomainError('ڕێکخستنی کلاود نادروستە؛ کارکردنی ناوخۆ بەردەوامە',409);}};
@@ -53,6 +55,9 @@ const server=createServer(async(req,res)=>{res.setHeader('X-Content-Type-Options
  if(url.pathname==='/api/sales'&&req.method==='POST'){auth.requirePermission(session,'sales.create');return json(res,201,{receipt:store.sell(await body(req),session.user.id)});}
  if(url.pathname==='/api/sync'&&req.method==='GET'){auth.requirePermission(session,'sync.manage');return json(res,200,sync.status());}
  if(url.pathname==='/api/sync/run'&&req.method==='POST'){auth.requirePermission(session,'sync.manage');await body(req);return json(res,200,await sync.run({force:true}));}
+ if(url.pathname==='/api/backups'&&req.method==='GET'){auth.requirePermission(session,'backup.create');return json(res,200,{backups:await backups.list()});}
+ const backupPath=url.pathname.match(/^\/api\/backups\/([^/]+)\/(download|verify)$/);
+ if(backupPath){auth.requirePermission(session,'backup.create');const name=backupPath[1];if(backupPath[2]==='verify'&&req.method==='POST'){await body(req);return json(res,200,await backups.verify(name));}if(backupPath[2]==='download'&&req.method==='GET'){const {handle}=await backups.file(name);try{const stat=await handle.stat();res.writeHead(200,{'Content-Type':'application/octet-stream','Content-Disposition':`attachment; filename="${name}"`,'Content-Length':stat.size,'Cache-Control':'no-store'});await pipeline(handle.createReadStream(),res);}finally{await handle.close();}return;}}
  if(url.pathname==='/api/backup'&&req.method==='POST'){auth.requirePermission(session,'backup.create');await body(req);return json(res,201,await store.backup(join(dataDir,'backups')));}
  if(url.pathname==='/api/receipts'&&req.method==='GET')return json(res,200,receipts.list(session,Object.fromEntries(url.searchParams)));
  if(url.pathname.startsWith('/api/receipts/')&&req.method==='GET'){
@@ -65,7 +70,7 @@ const server=createServer(async(req,res)=>{res.setHeader('X-Content-Type-Options
  if(req.method!=='GET'&&req.method!=='HEAD')throw new DomainError('ڕێگەپێدراو نییە',405);
  let path;try{path=decodeURIComponent(url.pathname);}catch{throw new DomainError('ناونیشان نادروستە');}const file=resolve(root,'public','.'+(path==='/'?'/index.html':path));if(!file.startsWith(join(root,'public')+'/'))throw new DomainError('ڕێگەپێدراو نییە',403);
  const data=await readFile(file);res.writeHead(200,{'Content-Type':types[extname(file)]||'application/octet-stream','Cache-Control':'no-cache'});res.end(req.method==='HEAD'?undefined:data);
- }catch(e){if(e.code==='ENOENT')return json(res,404,{error:'پەڕە نەدۆزرایەوە'});if(!(e instanceof DomainError))console.error('Request failed:',e.message);json(res,e.status||500,{error:e instanceof DomainError?e.message:'هەڵەیەکی ناوخۆ ڕوویدا'});}});
+ }catch(e){if(res.headersSent){res.destroy();return;}if(e.code==='ENOENT')return json(res,404,{error:'پەڕە نەدۆزرایەوە'});if(!(e instanceof DomainError))console.error('Request failed:',e.message);json(res,e.status||500,{error:e instanceof DomainError?e.message:'هەڵەیەکی ناوخۆ ڕوویدا'});}});
 let backingUp=false;const interval=setInterval(async()=>{if(backingUp)return;backingUp=true;try{await store.backup(join(dataDir,'backups'));}catch(e){console.error('Backup failed:',e.message);}finally{backingUp=false;}},3600000);interval.unref();
 const syncInterval=setInterval(()=>{if(sync.status().configured)void sync.run();},15000);syncInterval.unref();
 if(sync.status().configured)void sync.run();
