@@ -40,7 +40,6 @@ export function calculatePurchase(db,input){
   const p=db.prepare('SELECT stock_milli FROM products WHERE id=?').get(id);
   return {product_id:id,addition_milli,after_milli:p.stock_milli+addition_milli};
  });
- db.exec('COMMIT');
  return {preview_only:true,as_of:new Date().toISOString(),supplier,currency:input.currency,total,items:lines,stock_after,posted:false};
 }
 export function openPurchasePreview(store){
