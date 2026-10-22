@@ -143,6 +143,17 @@ test('streamed product, cart, checkout, sale, backup and sync writes refuse revo
  },auth);
  assert.equal(added.status,201,JSON.stringify(added.body));
  const cashierId=added.body.user.id;
+ // A streamed owner PATCH must not change staff access after the owner's own logout.
+ const halfTeamPatch=beginBody(base,'/api/users/'+cashierId,'PATCH',{active:false},auth);
+ await sleep(95);
+ const ownerLogout=await http(base,'/api/auth/logout','POST',{},auth);
+ assert.equal(ownerLogout.status,200);
+ const refusedTeamPatch=await halfTeamPatch.finish();
+ assert.equal(refusedTeamPatch.status,401,'revoked owner may not disable an account after logout');
+ auth=await login();
+ const staff=(await http(base,'/api/users','GET',undefined,auth)).body.users;
+ assert.equal(staff.find(user=>user.id===cashierId).active,true,
+  'the employee must remain active after the refused owner mutation');
  const cashierLogin=await http(base,'/api/auth/login','POST',{
   username:'revoked-cashier',password:'QA-password-cashier-revoke-123'
  });
