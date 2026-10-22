@@ -27,6 +27,15 @@ function auditFingerprint(db,excluded=''){
 }
 function compatibility(db){
  const required={products:'id,name,sku,currency,unit_price,unit_cost,carton_units,carton_price,stock_milli,created_at',barcodes:'code,product_id,unit',sales:'id,request_id,request_payload,receipt_no,currency,total,received,created_at,actor_id',sale_items:'id,sale_id,product_id,name,unit,quantity,base_milli,unit_price,line_total',stock_ledger:'id,product_id,delta_milli,kind,reference_id,created_at',outbox:'id,kind,payload,created_at,synced_at',auth_users:'id,name,username,password_hash,salt,role,active,created_at',auth_sessions:'token_hash,user_id,csrf,expires_at',auth_attempts:'username,failures,blocked_until,updated_at',access_audit:'id,actor_id,action,target_id,details,created_at'};
+ if(db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='cash_shifts'").get()){
+  required.cash_shifts='id,currency,opened_by,open_request_id,opening_amount,balance,opened_at,closed_at,closed_by,close_request_id,counted_amount,discrepancy';
+  required.cash_ledger='id,shift_id,currency,kind,reference_id,actor_id,amount,created_at';
+ }
+ if(db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='purchases'").get()){
+  required.purchases='id,request_id,request_payload,purchase_no,actor_id,supplier_id,supplier_code,supplier_name,invoice_no,currency,total,cash_paid,created_at';
+  required.purchase_items='id,purchase_id,product_id,name,sku,unit,quantity,base_milli,unit_cost,line_total';
+  required.purchase_stock_ledger='id,product_id,delta_milli,reference_id,created_at';
+ }
  for(const [table,columns]of Object.entries(required)){const actual=new Set(db.prepare(`PRAGMA table_info(${quote(table)})`).all().map(x=>x.name));check(columns.split(',').every(c=>actual.has(c)),'پێکهاتەی باکئەپ بۆ ئامادەکردنی گەڕاندنەوە ناگونجێت');}
  check(db.prepare("SELECT count(*) n FROM auth_users WHERE role='owner' AND active=1").get().n===1,'باکئەپ دەبێت هەژماری خاوەنێکی چالاکی هەبێت');
 }
