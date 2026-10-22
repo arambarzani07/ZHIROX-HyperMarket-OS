@@ -41,7 +41,7 @@ test('cash refunds and expenses HTTP require independent POST gate and CSRF, rem
  const product_id=(await product.json()).product.id;
  const opening=await send('/api/cash/shifts',{request_id:randomUUID(),currency:'IQD',opening_amount:5000},auth);
  assert.equal(opening.status,201);
- const receipt=await send('/api/sales',{request_id:randomUUID(),currency:'IQD',received:2000,items:[{product_id,unit:'unit',quantity:2}]},auth);
+ const receipt=await send('/api/sales',{request_id:randomUUID(),currency:'IQD',received:5000,items:[{product_id,unit:'unit',quantity:2}]},auth);
  assert.equal(receipt.status,201);
  const saleId=(await receipt.json()).receipt.id;
  const exp={request_id:randomUUID(),currency:'IQD',amount:250,reason:'خەرجیی تاقیکردنەوەی QA'};
