@@ -18,6 +18,10 @@ try{
    required.purchase_items=['id','purchase_id','product_id'];
    required.purchase_stock_ledger=['id','product_id','delta_milli'];
   }
+  if(db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='purchase_intents'").get()){
+   required.purchase_intents=['request_id','actor_id','request_payload','supplier_id','currency','total','created_at'];
+   required.purchase_intent_cancellations=['request_id','actor_id','created_at'];
+  }
   const schema_ok=Object.entries(required).every(([table,columns])=>db.prepare("SELECT 1 FROM sqlite_schema WHERE name=? AND type='table'").get(table)&&columns.every(c=>db.prepare(`PRAGMA table_info(${table})`).all().some(x=>x.name===c)));
   if(!schema_ok)result={ok:false,reason:'schema_incompatible'};
   else if(db.prepare('PRAGMA foreign_key_check').get())result={ok:false,reason:'foreign_key_failed'};
