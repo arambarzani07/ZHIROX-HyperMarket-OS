@@ -26,6 +26,7 @@
    '<section class="panel"><h2>کۆتا جووڵەکانی پارە</h2><div class="tablewrap"><table><thead><tr><th>کات</th><th>دراو</th><th>جۆر</th><th>گۆڕانی پارە</th></tr></thead><tbody>'+
    (events.length?events.map(e=>'<tr><td dir="ltr">'+esc(date(e.created_at))+'</td><td>'+esc(e.currency)+'</td><td>'+esc(({opening:'پارەی سەرەتایی',sale:'فرۆشتن',purchase:'کڕین'})[e.kind]||e.kind)+'</td><td dir="ltr">'+money(e.amount,e.currency)+'</td></tr>').join(''):'<tr><td colspan="4">هیچ جووڵەیەک تۆمار نەکراوە.</td></tr>')+'</tbody></table></div></section>';
   view.querySelectorAll('input,select,button').forEach(el=>el.disabled=busy);
+  if(!pending||pending.kind!=='close')q('#cash-confirm').hidden=true;
   if(pending&&pending.kind==='close'){
    const s=shifts.find(x=>x.id===pending.id);
    if(s){const holder=q('#cash-confirm');holder.hidden=false;holder.innerHTML='<section class="panel"><h2>داخستنی سندوقی '+esc(s.currency)+'</h2><p>باڵانسی چاوەڕوانکراو: <strong>'+money(s.balance,s.currency)+' '+esc(s.currency)+'</strong></p><form id="cash-close-form"><label>بڕی پارەی ژمێردراوی ڕاستەقینە<input name="counted_amount" value="'+esc(pending.value??String(s.balance/(s.currency==='USD'?100:1)))+'" inputmode="decimal" required></label><button class="btn primary" type="submit">پشتڕاستکردنەوەی داخستن</button><button class="btn" id="cash-cancel-close" type="button">هەڵوەشاندنەوە</button></form><p class="sub">جیاوازیی پارە لە تۆماری داخستن پارێزراوە، نەک بە دەستکاری کردنی Ledger.</p></section>';}
