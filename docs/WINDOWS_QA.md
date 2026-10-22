@@ -1,4 +1,4 @@
-# Windows Acceptance Checklist — ZHIROX HyperMarket OS 0.34.0-dev.0
+# Windows Acceptance Checklist — ZHIROX HyperMarket OS 0.35.0-dev.0
 
 **Status:** NOT RUN on the supermarket's actual Windows PC. This is a QA protocol, not evidence of passing hardware tests. Existing Admin.exe, Cashier.exe, SQL Server and attached printers remain **100% read-only**; run tests only in an isolated ZHIROX data directory with dedicated test devices or user-authorized hardware.
 
@@ -83,6 +83,15 @@
 - [ ] Only 2 allowed read-only RPC names, 32 KiB JSON input limit, max 500 stock products per page, timeout and mapped generic SQL error responses.
 - [ ] Full mocked Edge-to-SQL-to-SQLite parity may yield `snapshot_equal:true` but **must not set** `can_enable_sync:true`.
 - [ ] No production project migration, deployed function, live device call, hardware printer test or real cloud synchronization occurred.
+
+## 0.35 — Read-only Staging check (test-copy only)
+- [ ] An explicit QA switch AND separate isolated-copy confirmation are required before opening a local test SQLite file.
+- [ ] Staging project ref must EXACTLY match the HTTPS capability-qa Edge endpoint; no redirects or other domains accepted.
+- [ ] Refuse before network if any Outbox item is pending, local ledger reconciliation fails, or persisted sync market/device ID differs.
+- [ ] Read ALL stock pages twice with capability checks before/mid/after; reject page overflow, network failures, changed checkpoint and altered stock between scans.
+- [ ] SQLite opened strictly read-only and original QA-file SHA-256 unchanged after comparisons.
+- [ ] Even perfect staging parity must retain `production_approved:false`, `can_enable_sync:false`, and `refund_posting_enabled:false`.
+- [ ] No actual cloud staging deployment has been performed; staging real-data and market physical hardware acceptance remain open.
 
 ## 4 — Backup/recovery and approval
 - [ ] Create and verify a complete SQLite backup including cash shifts, cash ledger, immutable stock ledgers, purchase intents, audit, sessions and outbox.
