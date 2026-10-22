@@ -2,6 +2,7 @@ import {openSuppliers} from './suppliers.mjs';
 import {openPurchasePreview} from './purchase-preview.mjs';
 import {openPurchases} from './purchases.mjs';
 import {openCash} from './cash.mjs';
+import {openCashAdjustments} from './cash-adjustments.mjs';
 import {reconcile} from './reconcile.mjs';
 import {openPosCatalog} from './pos-catalog.mjs';
 import {catalogPage} from './catalog.mjs';
@@ -28,6 +29,7 @@ if(!['127.0.0.1','localhost'].includes(host)&&process.env.ZHIROX_PREVIEW!=='1')t
 const dataDir=resolveDataDirectory();await mkdir(dataDir,{recursive:true});const store=openStore(join(dataDir,'zhirox.sqlite'));const auth=openAuth(store.db);const checkout=openCheckout(store);const receipts=openReceipts(store);const inventory=openInventory(store);const reports=openReports(store);const backups=openBackups(join(dataDir,'backups'));
 const suppliers=openSuppliers(store);
 const cash=openCash(store);
+const adjustments=openCashAdjustments(store);
 const cashAccountingEnabled=process.env.ZHIROX_CASH_ACCOUNTING==='enabled';
 // Cash mode is sticky once a real shift exists, even when ALL drawers were closed.
  // Otherwise disabling the environment flag would silently create untracked cash sales.
@@ -40,6 +42,8 @@ const cashAccountingEnabled=process.env.ZHIROX_CASH_ACCOUNTING==='enabled';
   if(!integrity.ok)throw new Error('Cash ledger protection: persisted ledger or stock reconciliation failed; startup blocked until reviewed backup recovery');
  }
 if(cashAccountingEnabled)store.attachSaleCashHook((actor,receipt)=>cash.recordSale(actor,receipt));
+// Independent opt-in gate: no refund/expense can post via the standard QA launcher.
+const adjustmentPostingEnabled=cashAccountingEnabled&&process.env.ZHIROX_ADJUSTMENT_POSTING==='enabled';
 const purchases=openPurchases(store,{cash:cashAccountingEnabled?cash:null});
 const purchasePostingEnabled=cashAccountingEnabled&&process.env.ZHIROX_PURCHASE_POSTING==='enabled';
 const purchasePreview=openPurchasePreview(store);
@@ -82,6 +86,33 @@ const server=createServer(async(req,res)=>{res.setHeader('X-Content-Type-Options
  if(importPath&&req.method==='POST'){auth.requirePermission(session,'products.write');const input=await body(req,17*1024*1024),fresh=auth.session(token);auth.requirePermission(fresh,'products.write');if(req.headers['x-zhirox-csrf']!==fresh.csrf)throw new DomainError('دانیشتن گۆڕاوە',403);return json(res,importPath[1]?200:201,importPath[1]?productImport.preview(fresh,input):productImport.apply(fresh,input));}
  if(url.pathname==='/api/products/export.csv'&&req.method==='GET'){if(url.search)throw new DomainError('هەناردەی کاڵا فلتەری گەڕان وەرناگرێت');const result=exportCatalog(store,session);res.writeHead(200,{'Content-Type':'text/csv; charset=utf-8','Content-Disposition':`attachment; filename="zhirox-products-${result.as_of.slice(0,10)}.csv"`,'Content-Length':Buffer.byteLength(result.csv),'Cache-Control':'no-store','X-Zhirox-Product-Count':String(result.products),'X-Zhirox-Exported-At':result.as_of});res.end(result.csv);return;}
  if(url.pathname==='/api/cash'&&req.method==='GET'){auth.requirePermission(session,'cash.read');return json(res,200,{enabled:cashAccountingEnabled,...cash.status(session)});}
+
+ if(url.pathname==='/api/cash/adjustments'&&req.method==='GET'){
+  auth.requirePermission(session,'cash.manage');
+  return json(res,200,{posting_enabled:adjustmentPostingEnabled,...adjustments.list(session)});
+ }
+ if(url.pathname==='/api/cash/expenses'&&req.method==='POST'){
+  auth.requirePermission(session,'cash.manage');
+  if(!adjustmentPostingEnabled)throw new DomainError('خەرجیی سندوق تەنها لە قۆناغی QA و بە مۆڵەتی تایبەت چالاک دەکرێت',409);
+  const input=await body(req),fresh=auth.session(token);
+  auth.requirePermission(fresh,'cash.manage');
+  if(req.headers['x-zhirox-csrf']!==fresh.csrf)throw new DomainError('دانیشتن گۆڕاوە',403);
+  return json(res,201,adjustments.expense(fresh,input));
+ }
+ const refundMatch=url.pathname.match(/^\/api\/cash\/refunds\/([a-f0-9-]{36})$/i);
+ if(refundMatch&&req.method==='POST'){
+  auth.requirePermission(session,'cash.manage');
+  if(!adjustmentPostingEnabled)throw new DomainError('Refund تەنها لە قۆناغی QA و بە مۆڵەتی تایبەت چالاک دەکرێت',409);
+  const input=await body(req),fresh=auth.session(token);
+  auth.requirePermission(fresh,'cash.manage');
+  if(req.headers['x-zhirox-csrf']!==fresh.csrf)throw new DomainError('دانیشتن گۆڕاوە',403);
+  return json(res,201,adjustments.refund(fresh,refundMatch[1],input));
+ }
+ const voidMatch=url.pathname.match(/^\/api\/cash\/void\/([a-f0-9-]{36})$/i);
+ if(voidMatch&&req.method==='POST'){
+  auth.requirePermission(session,'cash.manage');
+  throw new DomainError('فرۆشتنی تەواوبوو ناتوانرێت بسڕدرێتەوە؛ Refund ـی تۆمارکراو بە ledger بەکاربهێنە',409);
+ }
  if(url.pathname==='/api/cash/shifts'&&req.method==='POST'){auth.requirePermission(session,'cash.manage');if(!cashAccountingEnabled)throw new DomainError('سندوق هێشتا چالاک نەکراوە',409);const input=await body(req),fresh=auth.session(token);auth.requirePermission(fresh,'cash.manage');if(req.headers['x-zhirox-csrf']!==fresh.csrf)throw new DomainError('دانیشتن گۆڕاوە',403);return json(res,201,cash.open(fresh,input));}
  const closeShift=url.pathname.match(/^\/api\/cash\/shifts\/([0-9a-f-]{36})\/close$/i);if(closeShift&&req.method==='POST'){auth.requirePermission(session,'cash.manage');if(!cashAccountingEnabled)throw new DomainError('سندوق هێشتا چالاک نەکراوە',409);const input=await body(req),fresh=auth.session(token);auth.requirePermission(fresh,'cash.manage');if(req.headers['x-zhirox-csrf']!==fresh.csrf)throw new DomainError('دانیشتن گۆڕاوە',403);return json(res,200,cash.close(fresh,closeShift[1],input));}
  if(url.pathname==='/api/purchases/intents'&&req.method==='GET')return json(res,200,purchases.listIntents(session));
