@@ -62,7 +62,7 @@ async function refresh(){
   const [adjust,cash,sales]=await Promise.all([
    window.zhiroxRequest('/api/cash/adjustments'),
    window.zhiroxRequest('/api/cash'),
-   window.zhiroxRequest('/api/receipts')
+   window.zhiroxRequest('/api/receipts').catch(()=>({receipts:[]}))
   ]);
   if(g!==generation||!onCash())return;
   model={posting_enabled:adjust.posting_enabled===true&&cash.enabled===true,
@@ -103,7 +103,8 @@ async function submit(kind,input){
   paint();
  }
 }
-function clear(){generation++;busy=false;pending=null;model=null;receipts=[];error='';}
+function leave(){generation++;busy=false;model=null;receipts=[];error='';}
+function clear(){leave();pending=null;}
 root.addEventListener('submit',e=>{
  if(!['cash-expense-ledger-form','cash-refund-ledger-form'].includes(e.target?.id))return;
  e.preventDefault();
@@ -115,5 +116,5 @@ root.addEventListener('click',e=>{
  const button=e.target.closest('button');
  if(button?.id==='cash-adjustment-retry'&&pending&&!busy)void submit(pending.kind,{});
 });
-window.zhiroxAdjustments={refresh,clear};
+window.zhiroxAdjustments={refresh,leave,clear};
 })();
