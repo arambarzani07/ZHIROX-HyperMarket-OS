@@ -73,8 +73,13 @@ export function createCapabilityQAHandler({transport=fetch,env=n=>undefined,hash
   const origin=env('SUPABASE_URL')||'';
   const key=env('SUPABASE_SERVICE_ROLE_KEY')||'';
   const gate=env('ZHIROX_QA_CAPABILITY_STAGING')||'';
-  if(gate!=='enabled'||!/^https:\/\/[a-z0-9]+\.supabase\.co$/.test(origin)||
-    typeof key!=='string'||key.length<20)return result(503,{error:'staging_not_configured'});
+  const allowlisted=env('ZHIROX_QA_ALLOWED_PROJECT_REF')||'';
+  const match=/^https:\/\/([a-z0-9]+)\.supabase\.co$/.exec(origin);
+  // Two independent, explicit safeguards. Never infer staging safety from a service-role key.
+  // Missing/incorrect project allowlist fails closed before any database request.
+  if(gate!=='enabled'||!match||!/^[-a-z0-9]{8,40}$/.test(allowlisted)||
+    match[1]!==allowlisted||typeof key!=='string'||key.length<20)
+   return result(503,{error:'staging_not_configured'});
   try{
    const hash=await hashFn(token);
    if(!/^[0-9a-f]{64}$/.test(hash))return result(503,{error:'qa_unavailable'});
