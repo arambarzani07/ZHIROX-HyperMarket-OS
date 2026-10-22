@@ -1,4 +1,4 @@
-# Windows Acceptance Checklist — ZHIROX HyperMarket OS 0.27.0-dev.0
+# Windows Acceptance Checklist — ZHIROX HyperMarket OS 0.28.0-dev.0
 
 **Status:** NOT RUN on the supermarket's actual Windows PC. This is a QA protocol, not evidence of passing hardware tests. Existing Admin.exe, Cashier.exe, SQL Server and attached printers remain **100% read-only**; run tests only in an isolated ZHIROX data directory with dedicated test devices or user-authorized hardware.
 
@@ -29,6 +29,11 @@
 - [ ] Kill/restart a **test instance** after staging a purchase; verify its pending intent appears on refresh, can be posted once or audit-cancelled.
 - [ ] Kill/restart after a posted response is lost; verify recent posted intent is visible, with no duplicate cash movement.
 - [ ] Close IQD drawer with actual counted amount different from expected; verify signed discrepancy and recent closed-shift history.
+
+## Visual browser receipts verified on CI (not on printer)
+- [ ] Review latest `zhirox-receipt-visual-qa` CI artifact screenshots: 58mm IQD, 80mm USD and long 58mm Sorani example.
+- [ ] Inspect `audit.json` for `widthMatched:true`, `overflow:false`, `rtl:true`, and 0 unsafe DOM tags for each synthetic receipt.
+- [ ] Physical thermal printer glyph shaping, actual printable width and cutter/paper feed remain explicitly **unverified**.
 
 ## 3 — Physical devices: manual observation required
 - [ ] Run `powershell.exe -NoProfile -File scripts/windows-device-inspect.ps1` on authorized Windows QA hardware, review local printer names/ports without printing anything.
