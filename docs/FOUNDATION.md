@@ -51,6 +51,10 @@ Node.js 24+، هیچ dependency ـی runtime پێویست نییە. SQLite لە 
 
 بەشی «کڕین»ی ڕووکاری قوفڵکراو بە preview ـی بێ نووسین و API ـی تۆمارکردنی کڕینی نەقد پەیوەست کرا. خشتەکانی purchases / purchase_items / purchase_stock_ledger زیاد کراون، کۆگا و outbox و audit لە یەک transaction ـدان، و Supabase ـی یەک‌ئاراستە لەگەڵ purchase.created پشتڕاست کراوە. بەڵام API ـی تۆمارکردن بە بنەڕەت قوفڵە و تەنها بە ZHIROX_PURCHASE_POSTING=enabled چالاک دەبێت؛ سندوقی پارە پێویستی بە یەکخستن هەیە. [وردەکاری](PURCHASE_PREVIEW.md).
 
+## قۆناغی سندوق (0.22.0 — Branch، نەک Production)
+
+لە Cash Ledger ـی ناوخۆیی تۆمارەکانی opening، فرۆشتن و کڕینی نەقد زیاد کراون؛ کۆی پارە بۆ هەر دراو جیا هەژمار دەکرێت. کڕین/فرۆشتن و پارەی سندوق لە یەک transaction ـدان؛ داخستنی شەفت بە counted_amount و disparity تۆمار دەکرێت. بە بنەڕەت ZHIROX_CASH_ACCOUNTING ناچالاکە. [وردەکاری](CASH.md).
+
 ## قۆناغی داهاتوو
 
 ١. دەسەڵاتی وردتر بۆ کردارە داهاتووەکان و ڕێگای گەڕاندنەوەی دەستگەیشتن لە لەبیرچوونی وشەی نهێنی.
