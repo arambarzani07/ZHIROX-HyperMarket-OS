@@ -57,6 +57,10 @@ export function openCashAdjustments(store){
     check(updated.changes===1,'گەڕاندنەوەی کۆگا شکستیهێنا',409);
     db.prepare('INSERT INTO refund_stock_ledger VALUES(?,?,?,?,?)').run(randomUUID(),id,product,n,at);
    }
+   // Safe staged cloud stock reversal ONLY: no price, cash movement, reason, actor or expense leaves the machine.
+   // The existing sync engine refuses to send this new event until a separately verified remote protocol exists.
+   if(kind==='refund')
+    db.prepare('INSERT INTO outbox VALUES(?,?,?,?,NULL)').run(randomUUID(),'stock.refund_created',JSON.stringify({id,sale_id:saleId}),at);
    const changed=db.prepare('UPDATE cash_shifts SET balance=balance-? WHERE id=? AND closed_at IS NULL AND balance>=?').run(value,shift.id,value);
    check(changed.changes===1,'سندوق گۆڕاوە',409);
    db.prepare('INSERT INTO access_audit VALUES(?,?,?,?,?,?)').run(randomUUID(),actor,'cash.adjustment_'+kind,id,JSON.stringify({sale_id:saleId,currency:input.currency,amount:value,reason}),Date.now());
