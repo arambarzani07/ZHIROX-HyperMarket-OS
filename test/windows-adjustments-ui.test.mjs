@@ -93,6 +93,7 @@ test('Windows cash adjustment posts through backend only; retries same request_i
  assert.equal(f.getLedger().amount,-1500);
  assert.match(f.panel.innerHTML,/دووبارە تۆمار نەکرا/);
  assert.equal(f.confirmations.length,1);
+ assert.match(f.confirmations[0],/1,500/);
  assert.equal(f.getReloads(),1);
 });
 test('pending request survives switching pages and is cleared only upon sign-out',async()=>{
@@ -130,6 +131,7 @@ test('full Windows refund is sent without user-supplied amount; original sale re
  assert.equal(JSON.parse(post.opts.body).currency,'IQD');
  assert.equal(f.getRefund().amount,-3000);
  assert.equal(f.getRefund().sale_id,uuid);
+ assert.match(f.confirmations[0],/3,000/);
  assert.equal(f.getReloads(),1);
  assert.match(f.panel.innerHTML,/QA full refund confirmed/);
  assert.doesNotMatch(f.panel.innerHTML,/cash-adjustment-retry/);
