@@ -20,8 +20,10 @@ test('self-contained CMD launcher starts offline from isolated QA data with no s
  const inherited=join(rootQA,'inherited-production-do-not-touch');
  const cmd=process.env.ComSpec||'C:\\Windows\\System32\\cmd.exe';
  let child=null,output='';
+ const inheritedEnv={...process.env};
+ for(const key of Object.keys(inheritedEnv))if(key.toLowerCase()==='path')delete inheritedEnv[key];
  const environment={
-  ...process.env,
+  ...inheritedEnv,
   LOCALAPPDATA:local,
   ZHIROX_DATA_DIR:inherited,
   ZHIROX_CASH_ACCOUNTING:'enabled',
