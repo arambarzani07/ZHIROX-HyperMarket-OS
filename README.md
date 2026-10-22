@@ -49,7 +49,7 @@ Production branch: `main`
 
 - [هاوکاتکردنی Supabase — 0.3.0](docs/SYNC.md)
 
-- [پاکێجی Windows QA ـی خۆبەخۆ بە Node 24 ـی تێخراو — 0.29.0-dev.0](docs/WINDOWS.md)
+- [پاکێجی Windows QA ـی خۆبەخۆ بە Node 24 ـی تێخراو — 0.30.0-dev.0](docs/WINDOWS.md)
 
 - [سەبەتەی پارێزراو و فرۆشتنی بێ دووبارە — 0.4.0](docs/CHECKOUT.md)
 
@@ -78,4 +78,4 @@ Production branch: `main`
 - [لیستی پشکنینی Windows و هاردوێر — قۆناغی QA](docs/WINDOWS_QA.md)
 - [پشکنینی بێ نووسینی پڕینتەر، USB/HID و بارکۆدی 27 — 0.26.0-dev.0](docs/HARDWARE_QA.md)
 - [پسوولەی کوردی RTL و تاقیکردنەوەی بینراوی Chrome/Edge بۆ 58/80mm — 0.28.0-dev.0](docs/PRINT_QA.md)
-- [پاراستنی Cash Ledger دوای داخستنی سندوق، restart و گەڕاندنەوەی باکئەپ — 0.29.0-dev.0](docs/CASH.md)
+- [پاراستنی Cash Ledger، Full Refund و Expense ـی قوفڵکراو — 0.30.0-dev.0](docs/CASH.md)
