@@ -4,7 +4,7 @@ import {calculatePurchase} from './purchase-preview.mjs';
 const check=(x,m,s=400)=>{if(!x)throw new DomainError(m,s)};
 const uuid=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 // Additive-only schema: never rewrite legacy stock_ledger or sales.
-export function openPurchases(store){
+export function openPurchases(store,{cash=null}={}){
  const db=store.db;
  db.exec(`CREATE TABLE IF NOT EXISTS purchases(
  id TEXT PRIMARY KEY, request_id TEXT NOT NULL UNIQUE, request_payload TEXT NOT NULL,
@@ -63,6 +63,7 @@ export function openPurchases(store){
    const p=get(id);
    db.prepare('INSERT INTO outbox VALUES(?,?,?,?,NULL)').run(randomUUID(),'purchase.created',JSON.stringify(p),at);
    db.prepare('INSERT INTO access_audit VALUES(?,?,?,?,?,?)').run(randomUUID(),session.user.id,'purchase.cash_posted',id,JSON.stringify({purchase_no:number,total:calc.total,currency:calc.currency}),Date.now());
+   if(cash)cash.recordPurchase(session.user.id,p);
    if(beforeCommit)beforeCommit(p);
    db.exec('COMMIT');return{purchase:p,replayed:false};
   }catch(e){db.exec('ROLLBACK');throw e}
