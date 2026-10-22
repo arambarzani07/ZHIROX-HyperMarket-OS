@@ -66,6 +66,9 @@ const server=createServer(async(req,res)=>{res.setHeader('X-Content-Type-Options
  const token=(req.headers.cookie||'').split(';').map(x=>x.trim()).find(x=>x.startsWith('zhirox_session='))?.slice('zhirox_session='.length);
  const session=auth.session(token);
  const setSession=result=>{res.setHeader('Set-Cookie',`zhirox_session=${result.token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200`);return{user:result.user,csrf:result.csrf,expires_at:result.expires_at};};
+ // Body streams can outlive a logout, password change or permission revocation.
+ // Validate the CURRENT database session/CSRF immediately before every mutation.
+ const freshMutation=permission=>{const live=auth.session(token);auth.requirePermission(live,permission);if(req.headers['x-zhirox-csrf']!==live.csrf)throw new DomainError('دانیشتن گۆڕاوە',403);return live;};
  if(url.pathname==='/api/auth/state'&&req.method==='GET')return json(res,200,{setup_required:!auth.hasOwner(),user:session?.user||null,csrf:session?.csrf||null,expires_at:session?.expires_at||null});
  if(url.pathname==='/api/auth/setup'&&req.method==='POST')return json(res,201,setSession(await auth.setup(await body(req))));
  if(url.pathname==='/api/auth/login'&&req.method==='POST')return json(res,200,setSession(await auth.login(await body(req))));
@@ -163,17 +166,17 @@ const server=createServer(async(req,res)=>{res.setHeader('X-Content-Type-Options
  if(url.pathname==='/api/pos/products'&&req.method==='POST'){auth.requirePermission(session,'sales.create');const input=await body(req),fresh=auth.session(token);auth.requirePermission(fresh,'sales.create');if(req.headers['x-zhirox-csrf']!==fresh.csrf)throw new DomainError('دانیشتن گۆڕاوە',403);return json(res,200,posCatalog.products(fresh,input));}
  if(url.pathname==='/api/catalog'&&req.method==='GET')return json(res,200,catalogPage(store,session,Object.fromEntries(url.searchParams)));
  if(url.pathname==='/api/products'&&req.method==='GET'){auth.requirePermission(session,'products.read');let products=store.list(url.searchParams.get('q')||'');if(session.user.role==='cashier')products=products.map(({unit_cost,...p})=>p);return json(res,200,{products});}
- if(url.pathname==='/api/products'&&req.method==='POST'){auth.requirePermission(session,'products.write');return json(res,201,{product:store.create(await body(req))});}
+ if(url.pathname==='/api/products'&&req.method==='POST'){auth.requirePermission(session,'products.write');const input=await body(req);freshMutation('products.write');return json(res,201,{product:store.create(input)});}
  if(url.pathname==='/api/cart'&&req.method==='GET'){auth.requirePermission(session,'sales.create');return json(res,200,{cart:checkout.read(session.user.id)});}
- if(url.pathname==='/api/cart'&&req.method==='PUT'){auth.requirePermission(session,'sales.create');return json(res,200,{cart:checkout.save(session.user.id,await body(req))});}
- if(url.pathname==='/api/cart/checkout'&&req.method==='POST'){auth.requirePermission(session,'sales.create');return json(res,201,checkout.submit(session.user.id,await body(req)));}
- if(url.pathname==='/api/sales'&&req.method==='POST'){auth.requirePermission(session,'sales.create');return json(res,201,{receipt:store.sell(await body(req),session.user.id)});}
+ if(url.pathname==='/api/cart'&&req.method==='PUT'){auth.requirePermission(session,'sales.create');const input=await body(req),fresh=freshMutation('sales.create');return json(res,200,{cart:checkout.save(fresh.user.id,input)});}
+ if(url.pathname==='/api/cart/checkout'&&req.method==='POST'){auth.requirePermission(session,'sales.create');const input=await body(req),fresh=freshMutation('sales.create');return json(res,201,checkout.submit(fresh.user.id,input));}
+ if(url.pathname==='/api/sales'&&req.method==='POST'){auth.requirePermission(session,'sales.create');const input=await body(req),fresh=freshMutation('sales.create');return json(res,201,{receipt:store.sell(input,fresh.user.id)});}
  if(url.pathname==='/api/sync'&&req.method==='GET'){auth.requirePermission(session,'sync.manage');return json(res,200,sync.status());}
- if(url.pathname==='/api/sync/run'&&req.method==='POST'){auth.requirePermission(session,'sync.manage');await body(req);return json(res,200,await sync.run({force:true}));}
+ if(url.pathname==='/api/sync/run'&&req.method==='POST'){auth.requirePermission(session,'sync.manage');await body(req);freshMutation('sync.manage');return json(res,200,await sync.run({force:true}));}
  if(url.pathname==='/api/backups'&&req.method==='GET'){auth.requirePermission(session,'backup.create');return json(res,200,{backups:await backups.list()});}
  const backupPath=url.pathname.match(/^\/api\/backups\/([^/]+)\/(download|verify)$/);
  if(backupPath){auth.requirePermission(session,'backup.create');const name=backupPath[1];if(backupPath[2]==='verify'&&req.method==='POST'){await body(req);return json(res,200,await backups.verify(name));}if(backupPath[2]==='download'&&req.method==='GET'){const {handle}=await backups.file(name);try{const stat=await handle.stat();res.writeHead(200,{'Content-Type':'application/octet-stream','Content-Disposition':`attachment; filename="${name}"`,'Content-Length':stat.size,'Cache-Control':'no-store'});await pipeline(handle.createReadStream(),res);}finally{await handle.close();}return;}}
- if(url.pathname==='/api/backup'&&req.method==='POST'){auth.requirePermission(session,'backup.create');await body(req);return json(res,201,await store.backup(join(dataDir,'backups')));}
+ if(url.pathname==='/api/backup'&&req.method==='POST'){auth.requirePermission(session,'backup.create');await body(req);freshMutation('backup.create');return json(res,201,await store.backup(join(dataDir,'backups')));}
  if(url.pathname==='/api/receipts'&&req.method==='GET')return json(res,200,receipts.list(session,Object.fromEntries(url.searchParams)));
  if(url.pathname.startsWith('/api/receipts/')&&req.method==='GET'){
   if(!session.user.permissions.some(x=>['receipts.all','receipts.own'].includes(x)))throw new DomainError('دەسەڵاتی پسوولەت نییە',403);
