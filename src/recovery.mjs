@@ -36,6 +36,10 @@ function compatibility(db){
   required.purchase_items='id,purchase_id,product_id,name,sku,unit,quantity,base_milli,unit_cost,line_total';
   required.purchase_stock_ledger='id,product_id,delta_milli,reference_id,created_at';
  }
+ if(db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='purchase_intents'").get()){
+  required.purchase_intents='request_id,actor_id,request_payload,supplier_id,currency,total,created_at';
+  required.purchase_intent_cancellations='request_id,actor_id,created_at';
+ }
  for(const [table,columns]of Object.entries(required)){const actual=new Set(db.prepare(`PRAGMA table_info(${quote(table)})`).all().map(x=>x.name));check(columns.split(',').every(c=>actual.has(c)),'پێکهاتەی باکئەپ بۆ ئامادەکردنی گەڕاندنەوە ناگونجێت');}
  check(db.prepare("SELECT count(*) n FROM auth_users WHERE role='owner' AND active=1").get().n===1,'باکئەپ دەبێت هەژماری خاوەنێکی چالاکی هەبێت');
 }
