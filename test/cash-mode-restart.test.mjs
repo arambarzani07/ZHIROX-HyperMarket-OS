@@ -53,7 +53,8 @@ test('closed shift leaves durable cash-accounting flag lock after restart; legac
  const session=auth.session(setup.token),cash=openCash(store);
  assert.equal(cash.hasHistory(),false);
  assert.equal(cash.hasOpen(),false);
- const legacy=openStore(':memory:');openAuth(legacy.db);
+ const legacyDir=join(dir,'no-shift');mkdirSync(legacyDir);
+ const legacy=openStore(join(legacyDir,'zhirox.sqlite'));openAuth(legacy.db);
  assert.equal(openCash(legacy).hasHistory(),false);
  legacy.close();
  const opened=cash.open(session,{request_id:randomUUID(),currency:'IQD',opening_amount:15500}).shift;
@@ -70,6 +71,9 @@ test('closed shift leaves durable cash-accounting flag lock after restart; legac
  assert.equal(refused.started,false,'Cash flag silently disabled after closing all shifts');
  assert.notEqual(refused.exit,0);
  assert.match(refused.output,/historical cash shifts exist/);
+ const fresh=await boot(legacyDir,{enabled:false,port:base+2});
+ assert.equal(fresh.started,true,'Old database with no cash shifts must remain compatible with disabled cash');
+ await stopProcess(fresh.child);
  const reopened=await boot(dir,{enabled:true,port:base+1});
  assert.equal(reopened.started,true,'Valid cash history should start only when cash flag remains enabled: '+reopened.output);
  await stopProcess(reopened.child);
@@ -158,4 +162,20 @@ test('copy-only recovery of CLOSED shift retains sticky cash mode and never rewr
  assert.equal(allowed.started,true);
  await stopProcess(allowed.child);
  assert.equal(createHash('sha256').update(readFileSync(backupPath)).digest('hex'),originalHash);
+});
+
+test('orphaned immutable cash ledger history cannot bypass sticky gate if shift rows were tampered',t=>{
+ const store=openStore(':memory:');openAuth(store.db);t.after(()=>store.close());
+ store.db.prepare('INSERT INTO auth_users VALUES(?,?,?,?,?,?,?,?)').run('owner','Owner','owner','hash','salt','owner',1,Date.now());
+ const cash=openCash(store),owner={user:{id:'owner',permissions:PERMISSIONS.owner}};
+ const opened=cash.open(owner,{request_id:randomUUID(),currency:'IQD',opening_amount:2500}).shift;
+ assert.equal(cash.hasHistory(),true);
+ // Deliberately corrupt TEST-ONLY SQLite to simulate unsafe restore/manual manipulation.
+ store.db.exec('PRAGMA foreign_keys=OFF');
+ store.db.prepare('DELETE FROM cash_shifts WHERE id=?').run(opened.id);
+ assert.equal(cash.hasOpen(),false);
+ assert.equal(store.db.prepare('SELECT count(*) n FROM cash_shifts').get().n,0);
+ assert.equal(store.db.prepare('SELECT count(*) n FROM cash_ledger').get().n,1);
+ assert.equal(cash.hasHistory(),true);
+ assert.equal(reconcile(store.db).ok,false);
 });
