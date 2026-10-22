@@ -27,6 +27,11 @@ The pre-existing Windows-local Node 24 + SQLite application at \`http://127.0.0.
 - \`npm test\`, \`npm run check\`, Windows Node 24 native + extracted unsigned QA-only portable artifact on GitHub Actions.
 - Receipt print/browser visual QA still uses **synthetic snapshots**, not a physical receipt printer.
 
+### End-to-end local cashier journey (new)
+- `test/windows-cashier-full-journey-http.test.mjs` verifies a complete **real localhost API + disposable SQLite** workflow: Sorani authenticated owner; barcode lookup for units/cartons with unsafe scale label refused; optimistic-versioned cart; no-shift sale atomic refusal; open cash shift; durable checkout receipt, change, stock and exactly-once sale replay; backend restart; CSRF and manual refund amount blocked; full refund restores stock; duplicate refund forbidden; expense, replay and cash balance; final database ledger reconciliation.
+- The test explicitly enables cash accounting and later gated adjustments **only inside a fresh system temp-directory database**. No market API, remote Supabase, printer, scale or legacy SQL Server is connected.
+- Automatic HTTP acceptance is not evidence of passing a human Windows UI/physical hardware test.
+
 ## Acceptance gates still open
 
 The complete cashier is NOT production ready solely because these UI/API tests pass. A market-owner-approved isolated staging environment and physical test Windows PC are still needed to validate:
