@@ -23,6 +23,15 @@ export function openPurchases(store,{cash=null}={}){
  id TEXT PRIMARY KEY, product_id TEXT NOT NULL REFERENCES products(id),
  delta_milli INTEGER NOT NULL CHECK(delta_milli>0),reference_id TEXT NOT NULL REFERENCES purchases(id),
  created_at TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS purchase_intents(
+ request_id TEXT PRIMARY KEY,actor_id TEXT NOT NULL REFERENCES auth_users(id),
+ request_payload TEXT NOT NULL, supplier_id TEXT NOT NULL REFERENCES suppliers(id),
+ currency TEXT NOT NULL CHECK(currency IN('IQD','USD')),
+ total INTEGER NOT NULL CHECK(total>=0),
+ created_at TEXT NOT NULL);
+ CREATE INDEX IF NOT EXISTS purchase_intents_actor ON purchase_intents(actor_id,created_at);
+ CREATE TRIGGER IF NOT EXISTS purchase_intents_no_update BEFORE UPDATE ON purchase_intents BEGIN SELECT RAISE(ABORT,'immutable purchase intent');END;
+ CREATE TRIGGER IF NOT EXISTS purchase_intents_no_delete BEFORE DELETE ON purchase_intents BEGIN SELECT RAISE(ABORT,'immutable purchase intent');END;
  CREATE INDEX IF NOT EXISTS purchase_items_purchase ON purchase_items(purchase_id);
  CREATE INDEX IF NOT EXISTS purchase_stock_by_product ON purchase_stock_ledger(product_id);
  CREATE TRIGGER IF NOT EXISTS purchase_no_update BEFORE UPDATE ON purchases BEGIN SELECT RAISE(ABORT,'immutable purchase');END;
@@ -68,7 +77,57 @@ export function openPurchases(store,{cash=null}={}){
    db.exec('COMMIT');return{purchase:p,replayed:false};
   }catch(e){db.exec('ROLLBACK');throw e}
  }
- return {post,
+ function stage(session,input){
+  permit(session,'purchases.create');
+  check(input&&typeof input==='object'&&!Array.isArray(input),'داواکاری کڕین نادروستە');
+  check(Object.keys(input).every(x=>['request_id','supplier_id','currency','items','invoice_no'].includes(x)),'خانەی نەناسراو');
+  check(typeof input.request_id==='string'&&/^[A-Za-z0-9-]{16,80}$/.test(input.request_id),'ناسنامەی داواکاری نادروستە');
+  check(input.invoice_no===undefined||typeof input.invoice_no==='string','ژمارەی پسوولە نادروستە');
+  const invoice_no=(input.invoice_no||'').trim();
+  check(invoice_no.length<=80,'ژمارەی پسوولە زۆر درێژە');
+  const prepared={supplier_id:input.supplier_id,currency:input.currency,items:input.items,invoice_no};
+  const payload=JSON.stringify(prepared),actor=session.user.id;
+  db.exec('BEGIN IMMEDIATE');
+  try{
+   const old=db.prepare('SELECT * FROM purchase_intents WHERE request_id=?').get(input.request_id);
+   if(old){
+    check(old.actor_id===actor,'داواکاری هەژماری ترە',403);
+    check(old.request_payload===payload,'ناوەڕۆکی داواکاری گۆڕاوە',409);
+    const posted=db.prepare('SELECT id FROM purchases WHERE request_id=?').get(input.request_id);
+    db.exec('COMMIT');
+    return{request_id:input.request_id,already_staged:true,posted:!!posted,purchase_id:posted?.id||null};
+   }
+   check(!db.prepare('SELECT 1 FROM purchases WHERE request_id=?').get(input.request_id),'ناسنامەی داواکاری پێشتر بەکار هاتووە',409);
+   const calc=calculatePurchase(db,{supplier_id:input.supplier_id,currency:input.currency,items:input.items});
+   const pending=db.prepare('SELECT count(*) n FROM purchase_intents i LEFT JOIN purchases p ON p.request_id=i.request_id WHERE i.actor_id=? AND p.id IS NULL').get(actor).n;
+   check(pending<100,'سنووری داواکاریی کڕینی ناتەواو پڕ بووە؛ سەرەتا ئەوانە ڕێک بخە',409);
+   db.prepare('INSERT INTO purchase_intents VALUES(?,?,?,?,?,?,?)').run(input.request_id,actor,payload,calc.supplier.id,calc.currency,calc.total,new Date().toISOString());
+   db.exec('COMMIT');
+   return{request_id:input.request_id,already_staged:false,posted:false,purchase_id:null,total:calc.total,currency:calc.currency};
+  }catch(e){db.exec('ROLLBACK');throw e;}
+ }
+ function intentPost(session,request_id,beforeCommit=null){
+  permit(session,'purchases.create');
+  check(typeof request_id==='string'&&/^[A-Za-z0-9-]{16,80}$/.test(request_id),'ناسنامەی داواکاری نادروستە');
+  const intent=db.prepare('SELECT * FROM purchase_intents WHERE request_id=?').get(request_id);
+  check(intent,'داواکاریی پارێزراو نەدۆزرایەوە',404);
+  check(intent.actor_id===session.user.id,'داواکاریی کارمەندێکی ترە',403);
+  return post(session,{request_id,...JSON.parse(intent.request_payload)},beforeCommit);
+ }
+ function listIntents(session){
+  const actor=permit(session,'purchases.create');
+  // Include every pending intent (bounded per actor), plus ten completed intents
+  // so a lost response after a successful post can be distinguished from failure.
+  const pending=db.prepare(`SELECT i.request_id,i.supplier_id,i.currency,i.total,i.created_at,NULL purchase_id,i.request_payload
+   FROM purchase_intents i LEFT JOIN purchases p ON p.request_id=i.request_id
+   WHERE i.actor_id=? AND p.id IS NULL ORDER BY i.created_at DESC LIMIT 100`).all(actor);
+  const completed=db.prepare(`SELECT i.request_id,i.supplier_id,i.currency,i.total,i.created_at,p.id purchase_id,i.request_payload
+   FROM purchase_intents i JOIN purchases p ON p.request_id=i.request_id
+   WHERE i.actor_id=? ORDER BY i.created_at DESC LIMIT 10`).all(actor);
+  const shape=x=>({...x,request:JSON.parse(x.request_payload),request_payload:undefined,posted:!!x.purchase_id});
+  return{pending:pending.map(shape),recently_posted:completed.map(shape)};
+ }
+ return {post,stage,intentPost,listIntents,
   get(session,id){permit(session,'purchases.preview');check(uuid.test(id),'ناسنامە نادروستە');const purchase=get(id);check(purchase,'پسوولە نەدۆزرایەوە',404);return{purchase}},
   list(session,input={}){permit(session,'purchases.preview');check(Object.keys(input).every(k=>['limit','before'].includes(k)),'پارامەتر نادروستە');const limit=input.limit===undefined?25:Number(input.limit),before=input.before===undefined?null:Number(input.before);check(Number.isSafeInteger(limit)&&limit>0&&limit<=50,'پەڕە نادروستە');check(before===null||(Number.isSafeInteger(before)&&before>0),'ڕیزبەندی نادروستە');const sql='SELECT id,purchase_no,supplier_code,supplier_name,currency,total,cash_paid,created_at FROM purchases '+(before===null?'':'WHERE purchase_no<?')+' ORDER BY purchase_no DESC LIMIT ?';const all=db.prepare(sql).all(...(before===null?[]:[before]),limit+1),rows=all.slice(0,limit);return{purchases:rows,has_more:all.length>limit,next_before:all.length>limit?rows.at(-1).purchase_no:null}}
  };
