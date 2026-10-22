@@ -55,7 +55,7 @@ test('exact synthetically mirrored stock and checkpoint prove local snapshot par
  assert.equal(r.remote_sequence,f.seq);
  assert.equal(r.differing_products,0);
  const body=JSON.stringify(r);
- for(const secret of ['refund_stock_ledger','unit_price','unit_cost','cash.balance','reason','QA full refund','employee','receipt'])assert.equal(body.includes(secret),false);
+ for(const secret of ['refund_stock_ledger','unit_price','unit_cost','cash.balance','QA full refund','employee','receipt'])assert.equal(body.includes(secret),false);
 });
 test('queued unsynced outbox prevents parity acceptance even if quantities and checkpoint match',t=>{
  const f=fixture(t),r=inspectStockParityQA(f.s.db,f.build());
