@@ -29,6 +29,12 @@ export function openPurchases(store,{cash=null}={}){
  currency TEXT NOT NULL CHECK(currency IN('IQD','USD')),
  total INTEGER NOT NULL CHECK(total>=0),
  created_at TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS purchase_intent_cancellations(
+ request_id TEXT PRIMARY KEY REFERENCES purchase_intents(request_id),
+ actor_id TEXT NOT NULL REFERENCES auth_users(id),
+ created_at TEXT NOT NULL);
+ CREATE TRIGGER IF NOT EXISTS purchase_intent_cancel_no_update BEFORE UPDATE ON purchase_intent_cancellations BEGIN SELECT RAISE(ABORT,'immutable intent cancellation');END;
+ CREATE TRIGGER IF NOT EXISTS purchase_intent_cancel_no_delete BEFORE DELETE ON purchase_intent_cancellations BEGIN SELECT RAISE(ABORT,'immutable intent cancellation');END;
  CREATE INDEX IF NOT EXISTS purchase_intents_actor ON purchase_intents(actor_id,created_at);
  CREATE TRIGGER IF NOT EXISTS purchase_intents_no_update BEFORE UPDATE ON purchase_intents BEGIN SELECT RAISE(ABORT,'immutable purchase intent');END;
  CREATE TRIGGER IF NOT EXISTS purchase_intents_no_delete BEFORE DELETE ON purchase_intents BEGIN SELECT RAISE(ABORT,'immutable purchase intent');END;
@@ -94,13 +100,14 @@ export function openPurchases(store,{cash=null}={}){
     check(old.actor_id===actor,'داواکاری هەژماری ترە',403);
     check(old.request_payload===payload,'ناوەڕۆکی داواکاری گۆڕاوە',409);
     const posted=db.prepare('SELECT id FROM purchases WHERE request_id=?').get(input.request_id);
+    check(!db.prepare('SELECT 1 FROM purchase_intent_cancellations WHERE request_id=?').get(input.request_id),'داواکاری هەڵوەشێنراوەتەوە',409);
     db.exec('COMMIT');
     return{request_id:input.request_id,already_staged:true,posted:!!posted,purchase_id:posted?.id||null};
    }
    check(!db.prepare('SELECT 1 FROM purchases WHERE request_id=?').get(input.request_id),'ناسنامەی داواکاری پێشتر بەکار هاتووە',409);
    const calc=calculatePurchase(db,{supplier_id:input.supplier_id,currency:input.currency,items:input.items});
-   const pending=db.prepare('SELECT count(*) n FROM purchase_intents i LEFT JOIN purchases p ON p.request_id=i.request_id WHERE i.actor_id=? AND p.id IS NULL').get(actor).n;
-   check(pending<100,'سنووری داواکاریی کڕینی ناتەواو پڕ بووە؛ سەرەتا ئەوانە ڕێک بخە',409);
+   const pending=db.prepare('SELECT count(*) n FROM purchase_intents i LEFT JOIN purchases p ON p.request_id=i.request_id LEFT JOIN purchase_intent_cancellations c ON c.request_id=i.request_id WHERE i.actor_id=? AND p.id IS NULL AND c.request_id IS NULL').get(actor).n;
+   check(pending===0,'داواکاریی کڕینی ناتەواو هەیە؛ سەرەتا تۆماری بکە یان هەڵیوەشێنەوە',409);
    db.prepare('INSERT INTO purchase_intents VALUES(?,?,?,?,?,?,?)').run(input.request_id,actor,payload,calc.supplier.id,calc.currency,calc.total,new Date().toISOString());
    db.exec('COMMIT');
    return{request_id:input.request_id,already_staged:false,posted:false,purchase_id:null,total:calc.total,currency:calc.currency};
@@ -112,22 +119,39 @@ export function openPurchases(store,{cash=null}={}){
   const intent=db.prepare('SELECT * FROM purchase_intents WHERE request_id=?').get(request_id);
   check(intent,'داواکاریی پارێزراو نەدۆزرایەوە',404);
   check(intent.actor_id===session.user.id,'داواکاریی کارمەندێکی ترە',403);
+  check(!db.prepare('SELECT 1 FROM purchase_intent_cancellations WHERE request_id=?').get(request_id),'داواکاری هەڵوەشێنراوەتەوە',409);
   return post(session,{request_id,...JSON.parse(intent.request_payload)},beforeCommit);
+ }
+ function cancelIntent(session,request_id){
+  const actor=permit(session,'purchases.create');
+  check(typeof request_id==='string'&&/^[A-Za-z0-9-]{16,80}$/.test(request_id),'ناسنامەی داواکاری نادروستە');
+  db.exec('BEGIN IMMEDIATE');
+  try{
+   const intent=db.prepare('SELECT * FROM purchase_intents WHERE request_id=?').get(request_id);
+   check(intent,'داواکاری نەدۆزرایەوە',404);
+   check(intent.actor_id===actor,'داواکاریی کارمەندێکی ترە',403);
+   check(!db.prepare('SELECT 1 FROM purchases WHERE request_id=?').get(request_id),'داواکاری پێشتر تۆمار کراوە؛ ناتوانرێت هەڵبوەشێنرێتەوە',409);
+   const existing=db.prepare('SELECT 1 FROM purchase_intent_cancellations WHERE request_id=?').get(request_id);
+   if(existing){db.exec('COMMIT');return{request_id,cancelled:true,replayed:true};}
+   db.prepare('INSERT INTO purchase_intent_cancellations VALUES(?,?,?)').run(request_id,actor,new Date().toISOString());
+   db.prepare('INSERT INTO access_audit VALUES(?,?,?,?,?,?)').run(randomUUID(),actor,'purchase.intent_cancelled',request_id,JSON.stringify({supplier_id:intent.supplier_id,currency:intent.currency,total:intent.total}),Date.now());
+   db.exec('COMMIT');return{request_id,cancelled:true,replayed:false};
+  }catch(e){db.exec('ROLLBACK');throw e;}
  }
  function listIntents(session){
   const actor=permit(session,'purchases.create');
   // Include every pending intent (bounded per actor), plus ten completed intents
   // so a lost response after a successful post can be distinguished from failure.
   const pending=db.prepare(`SELECT i.request_id,i.supplier_id,i.currency,i.total,i.created_at,NULL purchase_id,i.request_payload
-   FROM purchase_intents i LEFT JOIN purchases p ON p.request_id=i.request_id
-   WHERE i.actor_id=? AND p.id IS NULL ORDER BY i.created_at DESC LIMIT 100`).all(actor);
+   FROM purchase_intents i LEFT JOIN purchases p ON p.request_id=i.request_id LEFT JOIN purchase_intent_cancellations c ON c.request_id=i.request_id
+   WHERE i.actor_id=? AND p.id IS NULL AND c.request_id IS NULL ORDER BY i.created_at DESC LIMIT 100`).all(actor);
   const completed=db.prepare(`SELECT i.request_id,i.supplier_id,i.currency,i.total,i.created_at,p.id purchase_id,i.request_payload
    FROM purchase_intents i JOIN purchases p ON p.request_id=i.request_id
    WHERE i.actor_id=? ORDER BY i.created_at DESC LIMIT 10`).all(actor);
   const shape=x=>({...x,request:JSON.parse(x.request_payload),request_payload:undefined,posted:!!x.purchase_id});
   return{pending:pending.map(shape),recently_posted:completed.map(shape)};
  }
- return {post,stage,intentPost,listIntents,
+ return {post,stage,intentPost,cancelIntent,listIntents,
   get(session,id){permit(session,'purchases.preview');check(uuid.test(id),'ناسنامە نادروستە');const purchase=get(id);check(purchase,'پسوولە نەدۆزرایەوە',404);return{purchase}},
   list(session,input={}){permit(session,'purchases.preview');check(Object.keys(input).every(k=>['limit','before'].includes(k)),'پارامەتر نادروستە');const limit=input.limit===undefined?25:Number(input.limit),before=input.before===undefined?null:Number(input.before);check(Number.isSafeInteger(limit)&&limit>0&&limit<=50,'پەڕە نادروستە');check(before===null||(Number.isSafeInteger(before)&&before>0),'ڕیزبەندی نادروستە');const sql='SELECT id,purchase_no,supplier_code,supplier_name,currency,total,cash_paid,created_at FROM purchases '+(before===null?'':'WHERE purchase_no<?')+' ORDER BY purchase_no DESC LIMIT ?';const all=db.prepare(sql).all(...(before===null?[]:[before]),limit+1),rows=all.slice(0,limit);return{purchases:rows,has_more:all.length>limit,next_before:all.length>limit?rows.at(-1).purchase_no:null}}
  };
