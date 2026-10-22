@@ -99,6 +99,10 @@ SQL ـی پێشنیارکراو بۆ **Staging** لە `supabase/refund-stock-syn
 
 دوو SQL function ـی Staging بە `SECURITY INVOKER` و `service_role` ـی ڕێپێدراو لە PostgreSQL ـی موقەتی دروست کراون: ناسینەوەی capability و خۆپشکنینی stock ـی کاڵاکان بە پەڕەی 1–500 و checkpoint. پشکنەری Node ـی ناوخۆ لە SQLite ـی تەنها-خوێندنەوە، ID و کۆگای هەموو کاڵا، داتای API ـی ساختە، pending Outbox و sequence یەک بە یەک بەراورد دەکات. **هیچ پەیوەندییەک بە Supabase ـی ڕاستەقینە، هیچ sync ـی پارە، هیچ گۆڕانی `main` نییە.** [وردەکاری](CAPABILITY_PARITY_QA.md).
 
+## Staging Edge Capability QA — 0.34.0-dev.0
+
+فەنکشنی جیا لە `supabase/functions/zhirox-capability-qa/` تەنها داواکاریی خوێندنەوەی Capability و پەڕەبەندی کۆگا بە مۆکی SQL جێبەجێ دەکات؛ هیچ جۆرە Refund/Expense ـێک بۆ Cloud نانێردرێت. قوفڵی Project Ref ـی Staging و Hash ـی Token، schema validation، 32KiB limit و 10s timeout زیاد کراون. تاقیکردنەوەی End-to-End ی ساختە بە SQLite پارێزراوە. ئەمە **هێشتا deploy ی ڕاستەقینە نییە**. [وردەکاری](EDGE_CAPABILITY_QA.md).
+
 ## قۆناغی داهاتوو
 
 ١. دەسەڵاتی وردتر بۆ کردارە داهاتووەکان و ڕێگای گەڕاندنەوەی دەستگەیشتن لە لەبیرچوونی وشەی نهێنی.
