@@ -76,3 +76,4 @@ Production branch: `main`
 - [سندوقی نەقد و Cash Ledger ـی یەکپارچە — 0.22.0](docs/CASH.md)
 - [داواکاریی کڕینی پارێزراو و گەڕاندنەوەی سندوق — 0.23.0](docs/DURABLE_PURCHASES.md)
 - [لیستی پشکنینی Windows و هاردوێر — قۆناغی QA](docs/WINDOWS_QA.md)
+- [پشکنینی بێ نووسینی پڕینتەر، USB/HID و بارکۆدی 27 — 0.26.0-dev.0](docs/HARDWARE_QA.md)
