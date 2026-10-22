@@ -21,7 +21,9 @@ The app displays the *original locked six-card Sorani RTL UI* inside the approve
 - QA-only integrity reporter recomputes current item stock from initial quantity + accepted purchases - nonrefunded sales, and cash from opening + shift sales - expenses - refunds. No invented production chart data.
 - Stock encoded as integer *units* in this QA simulator, and money as integer IQD or integer USD cents. **These demo units do not replace the real POS base-milli ledger**.
 - Scale barcode `27` EAN13 input is explicitly **refused** until the exact scale product-code, weight/price and checksum semantics are verified against physical hardware. Scanning these labels into the real POS is **not** supported by this demo.
-- Export/reset of QA session data only. Session starts empty on each page refresh; no persistent storage, backend API or payment processor.
+- Export of the entire test session in a **versioned, QA-only JSON file** (`zhirox-qa-session-v1.json`) plus explicit import from iPhone Files or desktop. The import validates the format/version, product ID and barcode uniqueness, item quantities, sale/receipt/shift links, cart, refund balance, purchase stock, customer debt and cash reconciliation **before** it can replace current in-memory state. Invalid files are rejected without modifying the existing session; valid replacements require operator confirmation.
+- Restore accepts only `.json` up to **1 MiB**. Export performs consistency validation and also enforces the size limit. No production import and no direct Windows SQLite backup format are accepted.
+- Session starts empty on each page refresh; the user must **explicitly download the QA JSON before refresh and import it afterward**. The app has no persistent storage, backend API or payment processor. The downloaded file is ordinary readable JSON; it is **not encrypted, not an authenticated backup, and must contain synthetic data only**.
 
 ### Verified status and limitations
 
