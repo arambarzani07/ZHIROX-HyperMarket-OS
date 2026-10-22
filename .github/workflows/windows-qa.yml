@@ -75,6 +75,10 @@ jobs:
           try {
             & $node scripts/windows-preflight.mjs --strict
             if ($LASTEXITCODE -ne 0) { throw 'Bundled Node preflight failed' }
+            $scanner = & $node scripts/scanner-readonly.mjs --barcode 2700002029709 | ConvertFrom-Json
+            if ($scanner.item_code -ne '0000202' -or $scanner.quantity -ne $null -or $scanner.price -ne $null -or $scanner.can_post_sale) { throw 'Packaged scale decoding is unsafe' }
+            $hardware = & pwsh -NoProfile -File scripts/windows-device-inspect.ps1 | ConvertFrom-Json
+            if (-not $hardware.read_only -or $hardware.printed_pages -ne 0 -or $hardware.destructive_actions -ne 0) { throw 'Packaged peripheral inspector is unsafe' }
             & $node --test test/windows-preflight.test.mjs test/cash-recovery.test.mjs test/purchase-intent-restart-http.test.mjs test/windows-portable-start.test.mjs
             if ($LASTEXITCODE -ne 0) { throw 'Bundled Node recovery smoke tests failed' }
           } finally { Pop-Location }
