@@ -28,6 +28,17 @@ jobs:
       - name: Run Windows-only and restore smoke tests
         run: node --test test/windows-preflight.test.mjs test/cash-recovery.test.mjs test/purchase-intent-restart-http.test.mjs
 
+      - name: Read-only Windows peripheral inventory (no printers or devices touched)
+        shell: pwsh
+        run: |
+          $report = & pwsh -NoProfile -File scripts/windows-device-inspect.ps1 | ConvertFrom-Json
+          if (-not $report.read_only -or $report.printed_pages -ne 0 -or $report.destructive_actions -ne 0) { throw 'Unsafe peripheral inventory report' }
+          if ($report.printer_tested -or $report.scanner_tested -or $report.scale_tested -or $report.cash_drawer_tested) { throw 'False physical hardware verification' }
+          Write-Output "Read-only inventory succeeded. Queue count: $(@($report.printer_queues).Count); hardware unverified."
+
+      - name: Validate scale barcode and scanner fail-closed rules
+        run: node --test test/hardware-readiness.test.mjs
+
       - name: Verify read-only preflight on actual Windows runner
         run: npm run windows:preflight
 
@@ -41,7 +52,7 @@ jobs:
       - name: Bundle SHA-256-verified upstream Node 24 x64 into QA-only portable ZIP
         shell: pwsh
         run: |
-          pwsh -NoProfile -File scripts/package-windows-selfcontained.ps1 -SourceZip dist/ZHIROX-Windows-Portable-0.25.0-dev.0.zip -OutputDir dist
+          pwsh -NoProfile -File scripts/package-windows-selfcontained.ps1 -SourceZip dist/ZHIROX-Windows-Portable-0.26.0-dev.0.zip -OutputDir dist
 
       - name: Verify standalone Node binary and manifest inside extracted QA-only ZIP
         shell: pwsh
