@@ -12,9 +12,9 @@ async function run(args=process.argv.slice(2)){
  if(args.length===2&&args[0]==='--barcode'){
   process.stdout.write(JSON.stringify(inspectOne(args[1]),null,2)+'\n');return;
  }
- if(args.length!==0){process.stderr.write('Usage: node scripts/scanner-readonly.mjs [--barcode EXACT_BARCODE]\n');process.exitCode=2;return;}
+ if(args.length!==0){process.stderr.write('بەکارهێنان: node scripts/scanner-readonly.mjs [--barcode EXACT_BARCODE]\n');process.exitCode=2;return;}
  if(!process.stdin.isTTY){
-  process.stderr.write('For interactive scanner QA use a terminal, or --barcode EXACT_BARCODE.\n');
+  process.stderr.write('بۆ تاقیکردنەوەی سکانەر Command Prompt بکەرەوە، یان --barcode EXACT_BARCODE بەکاربهێنە.\n');
   process.exitCode=2;return;
  }
  process.stdout.write('ZHIROX Hardware QA: سکانی بارکۆد/Enter. بۆ کۆتایی STOP بنووسە. هیچ داتایەک ناگۆڕدرێت.\n');
