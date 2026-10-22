@@ -35,6 +35,16 @@
 - Recovery تەنها لە فۆڵدەری **کۆپیی جیا** ئامادە دەبێت و SHA-256 ـی فایلە سەرەکیی باکئەپ پارێزراوە. **مێژووی شەفتی داخراوی کۆپی‌ش ئەم قوفڵە لەسەر دەبێت.**
 - بۆ QA: `test/cash-mode-restart.test.mjs` و `test/cash-recovery.test.mjs`؛ هەوڵی نووسین لە سیستەمی کاری مارکێت نەکراوە.
 
+## Refund، Void و خەرجیی سندوق (0.30.0-dev.0 — QA تەنها)
+
+- **تەنها دوو جۆری نووسینی پارێزراو زیاد کراوە:** `expense` (پارەی خەرجکراوی سندوق) و **Full Refund** (گەڕاندنەوەی تەواوی فرۆشتنی پێشوو). Partial Refund، گەڕاندنەوەی بەشی کالا، گواستنەوەی دراو و posted sale Void **هێشتا نەکراون**.
+- `ZHIROX_ADJUSTMENT_POSTING=enabled` پێویستە **لەگەڵ** `ZHIROX_CASH_ACCOUNTING=enabled`، و هەردوو بە بنەڕەت OFF ـن. ئەمە feature ـی **QA** ـە؛ لەسەر داتای ڕاستەقینە چالاکی مەکە. لانچەری Windows QA دەیکاتە OFF.
+- `POST /api/cash/expenses`: `request_id`، `currency`، `amount` (IQD integer/USD cents) و `reason` (٥ تا ٣٠٠ پیت). `POST /api/cash/refunds/:sale_id`: `request_id`، `currency` و `reason`، بەبێ amount؛ پارەکە لە پسوولەی تۆمارکراوەوە بەردەست دەکرێت. `GET /api/cash/adjustments` بۆ مێژووی خاوەن/بەڕێوەبەر. `POST /api/cash/void/:sale_id` بە 409 ڕەت دەکرێتەوە؛ پسوولەی تەواوبوو **ناسڕدرێتەوە**.
+- تەنها خاوەن/بەڕێوەبەر (`cash.manage`)؛ هەموو POST ـەکان CSRF و recheck ـی دانیشتن هەیە. بێ سندوقی کراوە، بڕی پارەی ناکافی، currency ناگونجاو، refund ـی دووبارە یان پسوولەی cash ـی پشتڕاستنەکراو ڕەت دەکرێنەوە.
+- `cash_adjustments` و `refund_stock_ledger` خشتەی additive، unique request_id و Trigger ـی **immutable** ـن. Refund پارەی `cash_shifts.balance` کەم دەکات و بڕی تەواوی کاڵاکان بە stock reversal ledger دەگەڕێنێتەوە، هەموویان لە **یەک SQLite transaction**؛ sale، stock_ledger و cash_ledger ـی کۆن ناگۆڕدرێن.
+- `reconcile` cash adjustments و refund stock ledger و cache دەپشکنێت. باکئەپ/کۆپیی recovery هەمان خشتەکان دەخوێنێتەوە. Retry ـی هەمان request_id **پارە دووبارە ناکەمێنێت**.
+- **گرنگ:** گەڕاندنەوەکانی 0.30 هێشتا بە Supabase sync ناکرێن، ڕووکاری بەکارهێنەری تەواوی Refund/Expense نییە، و گەڕاندنەوەی پارەی ڕاستەقینە تاقی نەکراوە. تا Cloud reconciliation و QA ـی هاردوێر تەواو نەبن، Production قوفڵە.
+
 ## سنووری گرنگ
 
 - ئەم قۆناغە **نەقدی هاتوو/چوو** بۆ فرۆشتن و کڕینی نوێی دوای چالاککردن هەژمار دەکات. فرۆشتن و کڕینی پێشوو بە خۆکار ناگەڕێندرێنەوە ناو Cash Ledger.
