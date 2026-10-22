@@ -9,6 +9,15 @@ try{
  if(integrity?.integrity_check!=='ok')result={ok:false,reason:'integrity_failed'};
  else{
   const required={products:['id','name','sku','stock_milli'],barcodes:['code','product_id'],sales:['id','receipt_no','total'],sale_items:['id','sale_id','product_id'],stock_ledger:['id','product_id','delta_milli'],outbox:['id','kind','payload'],auth_users:['id','username','password_hash','role']};
+  if(db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='cash_shifts'").get()){
+   required.cash_shifts=['id','currency','opening_amount','balance','opened_at','closed_at','counted_amount','discrepancy'];
+   required.cash_ledger=['id','shift_id','currency','kind','reference_id','amount'];
+  }
+  if(db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='purchases'").get()){
+   required.purchases=['id','request_id','currency','total'];
+   required.purchase_items=['id','purchase_id','product_id'];
+   required.purchase_stock_ledger=['id','product_id','delta_milli'];
+  }
   const schema_ok=Object.entries(required).every(([table,columns])=>db.prepare("SELECT 1 FROM sqlite_schema WHERE name=? AND type='table'").get(table)&&columns.every(c=>db.prepare(`PRAGMA table_info(${table})`).all().some(x=>x.name===c)));
   if(!schema_ok)result={ok:false,reason:'schema_incompatible'};
   else if(db.prepare('PRAGMA foreign_key_check').get())result={ok:false,reason:'foreign_key_failed'};
