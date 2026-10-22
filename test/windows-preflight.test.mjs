@@ -73,6 +73,6 @@ test('self-contained QA distribution validates official Node archive, bundles li
  const pkg=readFileSync(fileURLToPath(new URL('../package.json',import.meta.url)),'utf8');
  for(const part of ['nodejs.org/dist','SHASUMS256.txt','Get-FileHash','Node-LICENSE.txt','node-manifest.json','Compress-Archive','qa_only'])assert.ok(ps.includes(part),part);
  if(win)for(const part of ['package-windows-selfcontained.ps1','node_exe_sha256','Node-LICENSE.txt','ZHIROX-Windows-SelfContained-QA','upload-artifact@v4'])assert.ok(win.includes(part),part);
- assert.ok(pkg.includes('"version": "0.25.0-dev.0"'));
+ assert.ok(pkg.includes('"version": "0.26.0-dev.0"'));
  assert.ok(!ps.includes('Admin.exe')&&!ps.includes('Cashier.exe'));
 });
