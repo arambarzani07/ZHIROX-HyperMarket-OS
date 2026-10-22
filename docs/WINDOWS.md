@@ -1,4 +1,4 @@
-# پاکێجی تاقیکردنەوەی Windows — 0.27.0-dev.0
+# پاکێجی تاقیکردنەوەی Windows — 0.28.0-dev.0
 
 **دۆخ:** دوو جۆری Portable QA ZIP هەیە، نەک EXE، installer یان Windows Service. یەکێکیان Node.js ـی جیا داوا دەکات، ئەوی تریان Node.js ـی فەرمیی پشتڕاستکراوی لەخۆ گرتووە. ئەم پاکێجە بۆ ژینگەی جیا و تاقیکردنەوەی بەڕێوەبەر ئامادە کراوە؛ بەکارهێنانی ڕاستەقینەی مارکێت و گۆڕینی سیستەمی کۆن پەسەند نەکراوە.
 
@@ -29,13 +29,13 @@
 
 ## وەرگرتنی پاکێجی Windows QA لە GitHub Actions
 
-لە [GitHub Actions](https://github.com/arambarzani07/ZHIROX-HyperMarket-OS/actions) کاری **ZHIROX Windows QA (no hardware)** بە سەرکەوتوویی تەواوبوو هەڵبژێرە؛ لە `Artifacts` پاکێجی `zhirox-windows-qa-unsigned-portable` هەیە. دوو ZIP لەناویدان: `ZHIROX-Windows-Portable-0.27.0-dev.0.zip` (پێویستی بە Node ـی دامەزراو هەیە) و **`ZHIROX-Windows-SelfContained-QA-0.27.0-dev.0-x64.zip`** (Node 24 ـی فەرمی لەناویدایە). هەر یەک فایلێکی `.sha256` ـی تایبەتی هەیە. ئەم artifact ـە ماوەی سنوورداری هەیە (٧ ڕۆژ)، و بەڵگەنامەی signature ـی publisher نییە.
+لە [GitHub Actions](https://github.com/arambarzani07/ZHIROX-HyperMarket-OS/actions) کاری **ZHIROX Windows QA (no hardware)** بە سەرکەوتوویی تەواوبوو هەڵبژێرە؛ لە `Artifacts` پاکێجی `zhirox-windows-qa-unsigned-portable` هەیە. دوو ZIP لەناویدان: `ZHIROX-Windows-Portable-0.28.0-dev.0.zip` (پێویستی بە Node ـی دامەزراو هەیە) و **`ZHIROX-Windows-SelfContained-QA-0.28.0-dev.0-x64.zip`** (Node 24 ـی فەرمی لەناویدایە). هەر یەک فایلێکی `.sha256` ـی تایبەتی هەیە. ئەم artifact ـە ماوەی سنوورداری هەیە (٧ ڕۆژ)، و بەڵگەنامەی signature ـی publisher نییە.
 
 بۆ پشکنینی checksum لە PowerShell، لە فۆڵدەری ZIP:
 
 ```powershell
-Get-FileHash .\ZHIROX-Windows-SelfContained-QA-0.27.0-dev.0-x64.zip -Algorithm SHA256
-Get-Content .\ZHIROX-Windows-SelfContained-QA-0.27.0-dev.0-x64.zip.sha256
+Get-FileHash .\ZHIROX-Windows-SelfContained-QA-0.28.0-dev.0-x64.zip -Algorithm SHA256
+Get-Content .\ZHIROX-Windows-SelfContained-QA-0.28.0-dev.0-x64.zip.sha256
 ```
 
 بەهاکان دەبێت یەکسان بن؛ ئەگەر جیاوازن پاکێجەکە مەکەرەوە.
@@ -52,9 +52,13 @@ Get-Content .\ZHIROX-Windows-SelfContained-QA-0.27.0-dev.0-x64.zip.sha256
 
 ئێستا `scripts/windows-device-inspect.ps1` ناوی پرینتەرە دابنراوەکان و ئامێرەکانی USB/HID تەنها دەخوێنێتەوە؛ `scripts/scanner-readonly.mjs` دەتوانێت بارکۆدی سکانی Enter ـدار پشکنێت و بۆ 27-prefix، کۆدی ٧ ژمارەیی و check digit دەستنیشان بکات. ئەم قۆناغە **هیچ فەرمانی چاپکردن، Drawer Pulse یان فرۆشتنی کێش نەدات**. [وردەکاری](HARDWARE_QA.md).
 
-## پێشبینینی چاپی پسوولە (0.27.0-dev.0)
+## پێشبینینی چاپی پسوولە (0.28.0-dev.0)
 
 پسوولەی SQLite ـی پشتڕاستکراوە بە RTL و دوو پانی 58/80mm لە وێبگەڕ دەپێشبینرێت؛ ناوی کاڵا HTML-escape دەکرێت و بڕی پارە/گەڕاوە دەپشکنرێتەوە. چاپکردن تەنها بە کرتەی ئاشکرا لە Print dialog؛ هیچ ESC/POS یان Drawer Pulse ـێک نانێردرێت. 58/80mm لە CSS **پانی ناوەڕۆکە** و پێویستە Windows Printer Driver بەپێی کاغەزی ڕاستەقینە ڕێکبخرێت. [وردەکاری](PRINT_QA.md).
+
+## وێنە و پشکنینی بینراوی پسوولە (0.28.0-dev.0)
+
+لە Windows GitHub Actions ئەپەکە سێ پێشبینینی **QA تەنها** درووست دەکات: IQD بە 58mm، USD بە 80mm و پسوولەی درێژی ٣٨ هێڵ بە 58mm. Google Chrome یان Microsoft Edge ـی Headless بەڕاستی CSS و پانی کاغەز، RTL و overflow دەپشکنێت، سێ وێنەی PNG و `audit.json` لە Artifact ـی `zhirox-receipt-visual-qa` دادەنێت. ئەمە **چاپکردنی کاغەزی ڕاستەقینە نییە**؛ هیچ پڕینتەرێک لە CI فەرمانی چاپی بۆ نانێردرێت. [وردەکاری](PRINT_QA.md).
 
 ## سنووری ڕاستەقینە
 
