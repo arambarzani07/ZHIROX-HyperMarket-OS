@@ -47,13 +47,15 @@ begin
  -- STABLE function: all reads use one PostgreSQL statement snapshot.
  select coalesce(pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(
     'id',id,'stock_milli',stock_milli) order by id),'[]'::jsonb),
-    pg_catalog.count(*)::integer,pg_catalog.max(id)
- into v_rows,v_count,v_last
+    pg_catalog.count(*)::integer
+ into v_rows,v_count
  from (
    select id,stock_milli from public.zhirox_products
    where market_id=p_market and (p_after is null or id>p_after)
    order by id limit p_limit
  ) as page;
+ -- UUID has sortable B-tree order but no built-in MAX(uuid) aggregate on PG17.
+ v_last:=case when v_count>0 then (v_rows->(v_count-1)->>'id')::uuid else null end;
  select exists(
   select 1 from public.zhirox_products
    where market_id=p_market and id>coalesce(v_last,p_after)
