@@ -18,6 +18,10 @@
 
 لە هەژماری Supermark، پڕۆژەی `qcfmlyyzfykzszvtllrw`، migration ـی `zhirox_cash_purchase_sync` زیاد کرا. خشتەکانی `zhirox_purchases` و `zhirox_purchase_stock_ledger` بە RLS و default-deny زیاد بوون. RPC ـی `zhirox_ingest` لەگەڵ `purchase.created`، دۆخی device/market، sequence، replay، پڕۆفایلی کاڵا و بڕی کۆگا دەپشکنێت. تاقیکردنەوەی داتای تاقیکردنەوەی product/purchase/replay/checkpoint لە Cloud بە `BEGIN ... ROLLBACK` سەرکەوتوو بوو و هیچ تۆماری تاقیکردنەوە نەمابوو.
 
+## داواکاریی پارێزراو (0.23.0)
+
+`POST /api/purchases/intents` پێش گۆڕینی کۆگا/پارە، داواکاری بەبێ پارەدان لە SQLite هەڵدەگرێت. `POST /api/purchases/intents/:request_id/post` هەمان request_id بە یەک transaction تۆمار دەکات؛ `GET /api/purchases/intents` ناتەواو و کۆتا تۆمارکراوەکانی ئەو کارمەندە دەردەخات. داواکاریی ناتەواو تەنها بە هەڵوەشاندنەوەی Audit ـدار لادەبرێتەوە؛ نانووسرێتەوە. [وردەکاری](DURABLE_PURCHASES.md).
+
 ## سنووری گرنگ
 
 - Cash Purchase لێرەدا واتای «هەموو بڕەکە وەک نەقد پارەدراو تۆمار کراوە». لە قۆناغی 0.22.0 ـدا Cash Ledger لە یەک transaction ـی کڕین و کۆگا زیاد کرا. بەڵام خەرجیی گشتی، گواستنەوەی پارە و ڕادەستکردنی شەفت هێشتا ماون؛ بۆ Production تاقیکردنەوەی Windows و پاراستنی بڕی ڕاستەقینە پێویستە. [وردەکاری](CASH.md).
