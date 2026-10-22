@@ -1,4 +1,4 @@
-# پاکێجی تاقیکردنەوەی Windows — 0.28.0-dev.0
+# پاکێجی تاقیکردنەوەی Windows — 0.29.0-dev.0
 
 **دۆخ:** دوو جۆری Portable QA ZIP هەیە، نەک EXE، installer یان Windows Service. یەکێکیان Node.js ـی جیا داوا دەکات، ئەوی تریان Node.js ـی فەرمیی پشتڕاستکراوی لەخۆ گرتووە. ئەم پاکێجە بۆ ژینگەی جیا و تاقیکردنەوەی بەڕێوەبەر ئامادە کراوە؛ بەکارهێنانی ڕاستەقینەی مارکێت و گۆڕینی سیستەمی کۆن پەسەند نەکراوە.
 
@@ -29,7 +29,7 @@
 
 ## وەرگرتنی پاکێجی Windows QA لە GitHub Actions
 
-لە [GitHub Actions](https://github.com/arambarzani07/ZHIROX-HyperMarket-OS/actions) کاری **ZHIROX Windows QA (no hardware)** بە سەرکەوتوویی تەواوبوو هەڵبژێرە؛ لە `Artifacts` پاکێجی `zhirox-windows-qa-unsigned-portable` هەیە. دوو ZIP لەناویدان: `ZHIROX-Windows-Portable-0.28.0-dev.0.zip` (پێویستی بە Node ـی دامەزراو هەیە) و **`ZHIROX-Windows-SelfContained-QA-0.28.0-dev.0-x64.zip`** (Node 24 ـی فەرمی لەناویدایە). هەر یەک فایلێکی `.sha256` ـی تایبەتی هەیە. ئەم artifact ـە ماوەی سنوورداری هەیە (٧ ڕۆژ)، و بەڵگەنامەی signature ـی publisher نییە.
+لە [GitHub Actions](https://github.com/arambarzani07/ZHIROX-HyperMarket-OS/actions) کاری **ZHIROX Windows QA (no hardware)** بە سەرکەوتوویی تەواوبوو هەڵبژێرە؛ لە `Artifacts` پاکێجی `zhirox-windows-qa-unsigned-portable` هەیە. دوو ZIP لەناویدان: `ZHIROX-Windows-Portable-0.29.0-dev.0.zip` (پێویستی بە Node ـی دامەزراو هەیە) و **`ZHIROX-Windows-SelfContained-QA-0.28.0-dev.0-x64.zip`** (Node 24 ـی فەرمی لەناویدایە). هەر یەک فایلێکی `.sha256` ـی تایبەتی هەیە. ئەم artifact ـە ماوەی سنوورداری هەیە (٧ ڕۆژ)، و بەڵگەنامەی signature ـی publisher نییە.
 
 بۆ پشکنینی checksum لە PowerShell، لە فۆڵدەری ZIP:
 
@@ -59,6 +59,10 @@ Get-Content .\ZHIROX-Windows-SelfContained-QA-0.28.0-dev.0-x64.zip.sha256
 ## وێنە و پشکنینی بینراوی پسوولە (0.28.0-dev.0)
 
 لە Windows GitHub Actions ئەپەکە سێ پێشبینینی **QA تەنها** درووست دەکات: IQD بە 58mm، USD بە 80mm و پسوولەی درێژی ٣٨ هێڵ بە 58mm. Google Chrome یان Microsoft Edge ـی Headless بەڕاستی CSS و پانی کاغەز، RTL و overflow دەپشکنێت، سێ وێنەی PNG و `audit.json` لە Artifact ـی `zhirox-receipt-visual-qa` دادەنێت. ئەمە **چاپکردنی کاغەزی ڕاستەقینە نییە**؛ هیچ پڕینتەرێک لە CI فەرمانی چاپی بۆ نانێردرێت. [وردەکاری](PRINT_QA.md).
+
+## پاراستنی مێژوویی سندوق (0.29.0-dev.0)
+
+ئەگەر SQLite ـی هەڵبژێردراو هەر **یەک شەفتی** نەقدی تێدابێت، بەهۆی قوفڵی پاراستنەوە `ZHIROX_CASH_ACCOUNTING` نابێت ناچالاک بێت، تەنانەت ئەگەر شەفتەکە داخراوبێت. لانچەری QA flag ـەکە بە بنەڕەت ناچالاک دەهێڵێتەوە و **داتای QA ـی جیا** بەکاردەهێنێت؛ ئەگەر مێژووی پارەی پێشووی لەو هەمان فۆڵدەرەدا هەیە، دەستپێکردن بە پاراستن ڕادەگیرێت. **فایلەکە مەسڕەوە و Flag بۆ دەربازبوون لە قوفڵەکە بەکارمەهێنە.** [وردەکاری](CASH.md).
 
 ## سنووری ڕاستەقینە
 
