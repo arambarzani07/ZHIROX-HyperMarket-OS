@@ -32,6 +32,12 @@ The pre-existing Windows-local Node 24 + SQLite application at \`http://127.0.0.
 - The test explicitly enables cash accounting and later gated adjustments **only inside a fresh system temp-directory database**. No market API, remote Supabase, printer, scale or legacy SQL Server is connected.
 - Automatic HTTP acceptance is not evidence of passing a human Windows UI/physical hardware test.
 
+### Fixed: refund stock ledger surfaced in inventory history
+- The real `/api/inventory/:productId/ledger` previously reconciled original `stock_ledger` plus optional purchase movements, but **omitted** positive entries in the separate immutable `refund_stock_ledger`. Following a full return this caused a false inventory discrepancy in the **read-only UI** even when the durable SQLite balance was correct.
+- The API now includes optional refund stock deltas in both the reconciled total and the historical running balance, preserves the original no-refund/no-purchase schema, and permits receipt links on returned-stock rows **only** to users with `receipts.all` or matching `receipts.own`. Warehouse users see only stock movement, no unauthorized receipt reference.
+- `public/inventory.js` now labels return movements `گەڕاندنەوەی تەواوی فرۆشتن` rather than misidentifying them as ordinary sales.
+- `test/inventory-refund-ledger.test.mjs` checks the exact stock opening → sale → full return sequence (20,000 → 18,000 → 20,000 milli-units), paginated balances, permission-scoped links and legacy compatibility. This is still **local disposable SQLite QA**, not production hardware testing.
+
 ## Acceptance gates still open
 
 The complete cashier is NOT production ready solely because these UI/API tests pass. A market-owner-approved isolated staging environment and physical test Windows PC are still needed to validate:
