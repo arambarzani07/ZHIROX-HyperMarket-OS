@@ -40,6 +40,10 @@ It intentionally doesn't use the market SQL Server, Windows printers or producti
 
 **No price, cash balance, reason, cashier identity, currency, customer, shift or expense is included.** Expenses never produce cloud events.
 
+## 0.32 — Isolated PostgreSQL-only staging contract
+
+فایلی `supabase/refund-stock-sync-staging.sql` تەنها پێشنیاری migration ـی **Staging** ـە و هیچ جێبەجێکردنێکی ڕاستەقینەی Supabase لەگەڵ نەکراوە. `supabase/tests/refund-stock-sync.sql` لە PostgreSQL 17 ـی جیا بە RLS، tenant، full refund و idempotency تاقی دەکرێتەوە و هەموو نمونەکان `ROLLBACK` دەکات. [وردەکاری](REFUND_POSTGRES_QA.md).
+
 ## Production gates still closed
 1. Review a **new remote SQL migration** for a per-market, immutable refund stock ledger in an isolated staging project; prove RLS and service-role grants do not expose it to \`anon\` or \`authenticated\`.
 2. Extend the remote \`zhirox_ingest\` function to validate a refund has a corresponding previously replicated sale, exact per-product quantity and unit, positive return movements, correct sequence, market/device authorization and unique refund/sale. Retry must acknowledge the same event without adjusting stock twice. Reject payload drift and negative/overflow stock.
