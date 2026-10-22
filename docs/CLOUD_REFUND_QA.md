@@ -44,6 +44,10 @@ It intentionally doesn't use the market SQL Server, Windows printers or producti
 
 فایلی `supabase/refund-stock-sync-staging.sql` تەنها پێشنیاری migration ـی **Staging** ـە و هیچ جێبەجێکردنێکی ڕاستەقینەی Supabase لەگەڵ نەکراوە. `supabase/tests/refund-stock-sync.sql` لە PostgreSQL 17 ـی جیا بە RLS، tenant، full refund و idempotency تاقی دەکرێتەوە و هەموو نمونەکان `ROLLBACK` دەکات. [وردەکاری](REFUND_POSTGRES_QA.md).
 
+## Capability و Stock Parity ـی 0.33 — تەنها تاقیکردنەوە
+
+لە `supabase/refund-capability-parity-staging.sql` دوو فەنکشنی SQL ـی تەنها خوێندنەوە بۆ authentication و keyset pages زیاد کراون؛ `src/stock-parity-qa.mjs` بە داتای ساختە کۆگا و checkpoint بەراورد دەکات. **Cloud Sync ـی ڕاستەقینە هێشتا قوفڵە**، Cash Ledger هەر لە SQLite دەمێنێتەوە، و هیچ پارە/Expense ـێک بۆ Cloud نانێردرێت. [وردەکاری](CAPABILITY_PARITY_QA.md).
+
 ## Production gates still closed
 1. Review a **new remote SQL migration** for a per-market, immutable refund stock ledger in an isolated staging project; prove RLS and service-role grants do not expose it to \`anon\` or \`authenticated\`.
 2. Extend the remote \`zhirox_ingest\` function to validate a refund has a corresponding previously replicated sale, exact per-product quantity and unit, positive return movements, correct sequence, market/device authorization and unique refund/sale. Retry must acknowledge the same event without adjusting stock twice. Reject payload drift and negative/overflow stock.
