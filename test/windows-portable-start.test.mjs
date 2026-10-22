@@ -40,7 +40,7 @@ test('self-contained CMD launcher starts offline from isolated QA data with no s
   rmSync(rootQA,{recursive:true,force:true});
  }
  t.after(terminate);
- child=spawn(cmd,['/d','/c','"'+launcher+'"'],{env:environment,cwd:root,windowsHide:true,stdio:['ignore','pipe','pipe']});
+ child=spawn(cmd,['/d','/c',launcher],{env:environment,cwd:root,windowsHide:true,stdio:['ignore','pipe','pipe']});
  child.stdout.on('data',c=>{output+=String(c).slice(-3000);});
  child.stderr.on('data',c=>{output+=String(c).slice(-3000);});
  const endpoint='http://127.0.0.1:3187',deadline=Date.now()+12000;
