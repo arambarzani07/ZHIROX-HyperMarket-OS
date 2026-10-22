@@ -4,7 +4,7 @@ import{tmpdir}from'node:os';import{join}from'node:path';import{once}from'node:ev
 test('opt-in purchase posting endpoint persists once and updates stock in one local transaction',async t=>{
  const dir=mkdtempSync(join(tmpdir(),'zhirox-purchase-post-http-'));
  const port=40000+Math.floor(Math.random()*10000);
- const child=spawn(process.execPath,['src/server.mjs'],{env:{...process.env,PORT:String(port),ZHIROX_DATA_DIR:dir,ZHIROX_PURCHASE_POSTING:'enabled'},stdio:['ignore','pipe','pipe']});
+ const child=spawn(process.execPath,['src/server.mjs'],{env:{...process.env,PORT:String(port),ZHIROX_DATA_DIR:dir,ZHIROX_PURCHASE_POSTING:'enabled',ZHIROX_CASH_ACCOUNTING:'enabled'},stdio:['ignore','pipe','pipe']});
  t.after(async()=>{if(child.exitCode===null){child.kill('SIGTERM');await once(child,'exit');}rmSync(dir,{recursive:true,force:true});});
  await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('start timeout')),12000);child.stdout.once('data',()=>{clearTimeout(timer);resolve()});child.once('error',error=>{clearTimeout(timer);reject(error)})});
  const base='http://127.0.0.1:'+port;
@@ -14,6 +14,8 @@ test('opt-in purchase posting endpoint persists once and updates stock in one lo
  const auth=await setup.json(),cookie=setup.headers.get('set-cookie').split(';')[0];
  const headers={Cookie:cookie,'X-Zhirox-CSRF':auth.csrf};
  const conf=await(await fetch(base+'/api/purchases/config',{headers:{Cookie:cookie}})).json();assert.equal(conf.posting_enabled,true);
+ const opened=await send('/api/cash/shifts',{request_id:randomUUID(),currency:'IQD',opening_amount:6000},headers);
+ assert.equal(opened.status,201);
  const supplier=await send('/api/suppliers',{request_id:randomUUID(),code:'SUP-QA',name:'QA Supplier',currency:'IQD'},headers);
  assert.equal(supplier.status,201);const sid=(await supplier.json()).supplier.id;
  const created=await send('/api/products',{name:'QA Item',sku:'QA-ITEM',currency:'IQD',unit_price:1000,unit_cost:800,carton_units:6,carton_price:5500,stock_milli:10000,barcodes:[]},headers);
@@ -32,4 +34,7 @@ test('opt-in purchase posting endpoint persists once and updates stock in one lo
  assert.equal(history.reconciled,true);assert.equal(history.entries.filter(x=>x.kind==='purchase').length,1);
  const status=await(await fetch(base+'/api/health',{headers:{Cookie:cookie}})).json();
  assert.equal(status.pending_sync,2);
+ const cash=await(await fetch(base+'/api/cash',{headers:{Cookie:cookie}})).json();
+ assert.equal(cash.shifts.find(x=>x.currency==='IQD').balance,1500);
+ assert.equal(cash.events.filter(x=>x.kind==='purchase').length,1);
 });
