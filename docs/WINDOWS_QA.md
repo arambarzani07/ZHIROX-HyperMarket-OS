@@ -1,4 +1,4 @@
-# Windows Acceptance Checklist — ZHIROX HyperMarket OS 0.31.0-dev.0
+# Windows Acceptance Checklist — ZHIROX HyperMarket OS 0.32.0-dev.0
 
 **Status:** NOT RUN on the supermarket's actual Windows PC. This is a QA protocol, not evidence of passing hardware tests. Existing Admin.exe, Cashier.exe, SQL Server and attached printers remain **100% read-only**; run tests only in an isolated ZHIROX data directory with dedicated test devices or user-authorized hardware.
 
@@ -62,6 +62,13 @@
 - [ ] With a mocked cloud transport, a database with adjustments must make **zero HTTP requests** and report `adjustment_protocol_unavailable`.
 - [ ] Confirm missing outbox records from historical v0.30 refunds are detected and **not** auto-backfilled.
 - [ ] No live remote SQL migration, Edge Function deploy or Supabase data mutation has been performed. Real cloud sync remains blocked.
+
+## 0.32 — PostgreSQL staging contract gate (no live Supabase)
+- [ ] PostgreSQL 17 ephemeral CI tests of `supabase/refund-stock-sync-staging.sql` must PASS with rollback-only synthetic records.
+- [ ] Reject partial quantity, duplicate full refund, wrong device/token/market and mutation of immutable refund stock rows.
+- [ ] Confirm RLS and grants exclude `anon` and `authenticated` from refund documents, movements and ingest function.
+- [ ] Confirm original `public.zhirox_ingest` and existing Edge Function are **unchanged**, and Windows client has **zero actual refund network requests**.
+- [ ] Do not deploy staging SQL, merge `main`, or enable production cloud sync until separately authorized, full parity proven.
 
 ## 4 — Backup/recovery and approval
 - [ ] Create and verify a complete SQLite backup including cash shifts, cash ledger, immutable stock ledgers, purchase intents, audit, sessions and outbox.
