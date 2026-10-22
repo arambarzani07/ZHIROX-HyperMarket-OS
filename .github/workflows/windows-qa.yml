@@ -109,7 +109,7 @@ jobs:
           try {
             node scripts\windows-preflight.mjs --json --strict
             if ($LASTEXITCODE -ne 0) { throw 'Packaged preflight failed' }
-            node --test test/cash-http.test.mjs test/purchase-intent-restart-http.test.mjs
+            node --test --test-concurrency=1 test/cash-http.test.mjs test/purchase-intent-restart-http.test.mjs test/windows-cashier-full-journey-http.test.mjs
             if ($LASTEXITCODE -ne 0) { throw 'Extracted ZIP checkout/cash smoke tests failed' }
           } finally { Pop-Location }
 
