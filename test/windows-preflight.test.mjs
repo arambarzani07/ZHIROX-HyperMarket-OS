@@ -54,7 +54,9 @@ test('shows manual cash gates without enabling them or claiming hardware verific
  assert.equal(r.ok,true);
  assert.equal(r.cash_posting_enabled,true);
  assert.equal(r.hardware_verified,false);
- assert.equal(r.warnings.length,2);
+ assert.ok(r.warnings.some(x=>x.code==='cash_gate_enabled'));
+ assert.ok(r.warnings.some(x=>x.code==='purchase_gate_enabled'));
+ assert.ok(r.warnings.some(x=>x.code==='new_data_directory'));
 });
 test('packaged CMD launcher forces loopback and cash posting OFF, without touching old POS',()=>{
  const launcher=readFileSync(fileURLToPath(new URL('../Start-ZHIROX.cmd',import.meta.url)),'utf8');
