@@ -80,6 +80,7 @@ Production branch: `main`
 - [پسوولەی کوردی RTL و تاقیکردنەوەی بینراوی Chrome/Edge بۆ 58/80mm — 0.28.0-dev.0](docs/PRINT_QA.md)
 - [پاراستنی Cash Ledger، Full Refund و Expense ـی قوفڵکراو — 0.30.0-dev.0](docs/CASH.md)
 - [پەیوەستکردنی ڕووکاری سندوق و Refund بە Backend ـی SQLite ـی ڕاستەقینە، بە قوفڵی تۆمارکردن](docs/WINDOWS_REAL_CASH_INTEGRATION.md)
+- [کڕیاران: تۆماری SQLite ـی ڕاستەقینە، گەڕان، دەستکاری و دەسەڵات ــ قەرز هێشتا قوفڵە](docs/CUSTOMERS_REGISTRY.md)
 - [پاراستنی دانیشتن و مۆڵەت لە کاتی فرۆشتنی هێواش: پشکنینی دووبارەی CSRF پێش نووسین لە SQLite](docs/HTTP_MUTATION_SESSION_QA.md)
 - [QA ـی ئامادەکردنی Refund بۆ هاوتاکردنی **کۆگا تەنها** بە Supabase، بێ ناردنی پارە — 0.31.0-dev.0](docs/CLOUD_REFUND_QA.md)
 - [PostgreSQL 17 ـی جیا بۆ تاقیکردنەوەی Refund کۆگا، RLS، یەکتایی و Rollback — 0.32.0-dev.0](docs/REFUND_POSTGRES_QA.md)
