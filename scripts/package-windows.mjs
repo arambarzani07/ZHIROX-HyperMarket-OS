@@ -12,7 +12,7 @@ const version=JSON.parse(readFileSync(join(root,'package.json'),'utf8')).version
 const filename=`ZHIROX-Windows-Portable-${version}.zip`;
 const output=join(root,'dist');mkdirSync(output,{recursive:true});
 const zip=join(output,filename);
-execFileSync('git',['archive','--format=zip','--prefix=ZHIROX-HyperMarket-OS/','--output='+zip,'HEAD','README.md','AGENTS.md','package.json','src','public','design','docs','scripts','supabase','test'],{cwd:root});
+execFileSync('git',['archive','--format=zip','--prefix=ZHIROX-HyperMarket-OS/','--output='+zip,'HEAD','README.md','AGENTS.md','Start-ZHIROX.cmd','package.json','src','public','design','docs','scripts','supabase','test'],{cwd:root});
 const hash=createHash('sha256').update(readFileSync(zip)).digest('hex');
 writeFileSync(zip+'.sha256',`${hash}  ${filename}\n`);
-console.log(JSON.stringify({file:zip,sha256:hash,source_commit:git(['rev-parse','HEAD']),requires:'Node.js >=24 installed on Windows',windows_verified:false},null,2));
+console.log(JSON.stringify({file:zip,sha256:hash,source_commit:git(['rev-parse','HEAD']),requires:'Node.js >=24 installed on Windows',launcher:'Start-ZHIROX.cmd',cash_posting_default:false,windows_verified:false,hardware_verified:false},null,2));
