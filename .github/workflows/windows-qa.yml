@@ -26,7 +26,7 @@ jobs:
         run: npm run check
 
       - name: Run Windows-only and restore smoke tests
-        run: node --test test/windows-preflight.test.mjs test/cash-recovery.test.mjs test/purchase-intent-restart-http.test.mjs test/cash-mode-restart.test.mjs test/cash-adjustments.test.mjs test/cash-adjustments-http.test.mjs
+        run: node --test test/windows-preflight.test.mjs test/cash-recovery.test.mjs test/purchase-intent-restart-http.test.mjs test/cash-mode-restart.test.mjs test/cash-adjustments.test.mjs test/cash-adjustments-http.test.mjs test/cash-adjustments-recovery.test.mjs
 
       - name: Read-only Windows peripheral inventory (no printers or devices touched)
         shell: pwsh
@@ -81,7 +81,7 @@ jobs:
             if ($scanner.item_code -ne '0000202' -or $scanner.quantity -ne $null -or $scanner.price -ne $null -or $scanner.can_post_sale) { throw 'Packaged scale decoding is unsafe' }
             $hardware = & pwsh -NoProfile -File scripts/windows-device-inspect.ps1 | ConvertFrom-Json
             if (-not $hardware.read_only -or $hardware.printed_pages -ne 0 -or $hardware.destructive_actions -ne 0) { throw 'Packaged peripheral inspector is unsafe' }
-            & $node --test test/windows-preflight.test.mjs test/cash-recovery.test.mjs test/purchase-intent-restart-http.test.mjs test/cash-mode-restart.test.mjs test/cash-adjustments.test.mjs test/cash-adjustments-http.test.mjs test/windows-portable-start.test.mjs test/receipt-print.test.mjs test/receipt-visual-qa.test.mjs
+            & $node --test test/windows-preflight.test.mjs test/cash-recovery.test.mjs test/purchase-intent-restart-http.test.mjs test/cash-mode-restart.test.mjs test/cash-adjustments.test.mjs test/cash-adjustments-http.test.mjs test/cash-adjustments-recovery.test.mjs test/windows-portable-start.test.mjs test/receipt-print.test.mjs test/receipt-visual-qa.test.mjs
             if ($LASTEXITCODE -ne 0) { throw 'Bundled Node recovery smoke tests failed' }
             $capture = Join-Path $env:GITHUB_WORKSPACE 'dist/receipt-visual-qa'
             & $node scripts/receipt-visual-qa.mjs $capture
