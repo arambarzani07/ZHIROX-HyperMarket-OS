@@ -1,4 +1,4 @@
-# Windows Acceptance Checklist — ZHIROX HyperMarket OS 0.33.0-dev.0
+# Windows Acceptance Checklist — ZHIROX HyperMarket OS 0.34.0-dev.0
 
 **Status:** NOT RUN on the supermarket's actual Windows PC. This is a QA protocol, not evidence of passing hardware tests. Existing Admin.exe, Cashier.exe, SQL Server and attached printers remain **100% read-only**; run tests only in an isolated ZHIROX data directory with dedicated test devices or user-authorized hardware.
 
@@ -76,6 +76,13 @@
 - [ ] Compare local SQLite with **synthetic, preexisting JSON** using `node scripts/stock-parity-qa.mjs --db QA.sqlite --snapshot synthetic.json`; the command must perform **zero network requests and zero database writes**.
 - [ ] Ensure unacknowledged Outbox, wrong sequence, duplicate/missing product, cursor drift, stock quantity mismatch and failed local reconciliation block parity.
 - [ ] Even with `parity_conditions_met:true`, `can_enable_sync` and `remote_protocol_verified` must remain **false**. No real Supabase proof or live market QA is implied.
+
+## 0.34 — Staging Edge capability routing (mock QA only)
+- [ ] Explicit staging project ref MUST match the Supabase URL host; default-OFF/mismatch must result in **zero RPC requests**.
+- [ ] Device token must be SHA-256 hashed before scoped SQL RPC; credentials/finance information must never occur in an Edge response.
+- [ ] Only 2 allowed read-only RPC names, 32 KiB JSON input limit, max 500 stock products per page, timeout and mapped generic SQL error responses.
+- [ ] Full mocked Edge-to-SQL-to-SQLite parity may yield `snapshot_equal:true` but **must not set** `can_enable_sync:true`.
+- [ ] No production project migration, deployed function, live device call, hardware printer test or real cloud synchronization occurred.
 
 ## 4 — Backup/recovery and approval
 - [ ] Create and verify a complete SQLite backup including cash shifts, cash ledger, immutable stock ledgers, purchase intents, audit, sessions and outbox.
