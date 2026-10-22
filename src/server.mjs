@@ -81,7 +81,7 @@ const server=createServer(async(req,res)=>{res.setHeader('X-Content-Type-Options
  if(url.pathname==='/api/auth/password'&&req.method==='POST'){const result=await auth.changePassword(session,await body(req));res.setHeader('Set-Cookie','zhirox_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');return json(res,200,result);}
  if(url.pathname==='/api/users'&&req.method==='GET')return json(res,200,{users:auth.list(session)});
  if(url.pathname==='/api/users'&&req.method==='POST')return json(res,201,{user:await auth.create(session,await body(req))});
- if(url.pathname.startsWith('/api/users/')&&req.method==='PATCH')return json(res,200,{user:auth.update(session,url.pathname.split('/').pop(),await body(req))});
+ if(url.pathname.startsWith('/api/users/')&&req.method==='PATCH'){auth.requirePermission(session,'team.manage');const input=await body(req),fresh=freshMutation('team.manage');return json(res,200,{user:auth.update(fresh,url.pathname.split('/').pop(),input)});}
  if(url.pathname==='/api/access-audit'&&req.method==='GET')return json(res,200,{entries:auth.audit(session)});
  if(url.pathname==='/api/reports/products'&&req.method==='GET')return json(res,200,reports.products(session,Object.fromEntries(url.searchParams)));
  if(url.pathname==='/api/reports/sales'&&req.method==='GET')return json(res,200,reports.sales(session,Object.fromEntries(url.searchParams)));
