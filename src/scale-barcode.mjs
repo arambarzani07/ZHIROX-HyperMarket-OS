@@ -11,7 +11,7 @@ export function inspectScaleBarcode(value){
   item_code:value.slice(2,9),encoded_segment:value.slice(9,12),check_digit:value[12],
   checksum_valid:true,quantity:null,price:null,unit:null,
   can_post_sale:false,
-  warning:'The 3-digit encoded segment is vendor-specific. Never guess whether it represents weight or price.'
+  warning:'ئەم سێ ژمارەیە پەیوەستە بە فۆرماتی تەرازوو؛ تا پشتڕاستکردنەوە، وەک کێش یان نرخ لێکی مەدەرەوە.'
  };
 }
 export function inspectScannerText(input){
