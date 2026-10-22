@@ -1,4 +1,5 @@
 import {openSuppliers} from './suppliers.mjs';
+import {openCustomers} from './customers.mjs';
 import {openPurchasePreview} from './purchase-preview.mjs';
 import {openPurchases} from './purchases.mjs';
 import {openCash} from './cash.mjs';
@@ -28,6 +29,7 @@ if(!Number.isInteger(port)||port<1||port>65535)throw new Error('Invalid port');
 if(!['127.0.0.1','localhost'].includes(host)&&process.env.ZHIROX_PREVIEW!=='1')throw new Error('Public binding is disabled for this local foundation');
 const dataDir=resolveDataDirectory();await mkdir(dataDir,{recursive:true});const store=openStore(join(dataDir,'zhirox.sqlite'));const auth=openAuth(store.db);const checkout=openCheckout(store);const receipts=openReceipts(store);const inventory=openInventory(store);const reports=openReports(store);const backups=openBackups(join(dataDir,'backups'));
 const suppliers=openSuppliers(store);
+const customers=openCustomers(store);
 const cash=openCash(store);
 const adjustments=openCashAdjustments(store);
 const cashAccountingEnabled=process.env.ZHIROX_CASH_ACCOUNTING==='enabled';
@@ -158,6 +160,20 @@ const server=createServer(async(req,res)=>{res.setHeader('X-Content-Type-Options
  const purchasePath=url.pathname.match(/^\/api\/purchases\/([0-9a-f-]{36})$/i);if(purchasePath&&req.method==='GET')return json(res,200,purchases.get(session,purchasePath[1]));
  if(url.pathname==='/api/purchases'&&req.method==='POST'){auth.requirePermission(session,'purchases.create');if(!purchasePostingEnabled)throw new DomainError('تۆمارکردنی کڕین هێشتا چالاک نەکراوە',409);const input=await body(req),fresh=auth.session(token);auth.requirePermission(fresh,'purchases.create');if(req.headers['x-zhirox-csrf']!==fresh.csrf)throw new DomainError('دانیشتن گۆڕاوە',403);return json(res,201,purchases.post(fresh,input));}
  if(url.pathname==='/api/purchases/preview'&&req.method==='POST'){auth.requirePermission(session,'purchases.preview');const input=await body(req),fresh=auth.session(token);auth.requirePermission(fresh,'purchases.preview');if(req.headers['x-zhirox-csrf']!==fresh.csrf)throw new DomainError('دانیشتن گۆڕاوە',403);return json(res,200,purchasePreview.preview(fresh,input));}
+ if(url.pathname==='/api/customers'&&req.method==='GET')
+  return json(res,200,customers.list(session,Object.fromEntries(url.searchParams)));
+ if(url.pathname==='/api/customers'&&req.method==='POST'){
+  auth.requirePermission(session,'customers.write');
+  const input=await body(req),fresh=freshMutation('customers.write');
+  return json(res,201,customers.create(fresh,input));
+ }
+ const customerPath=url.pathname.match(/^\/api\/customers\/([0-9a-f-]{36})$/i);
+ if(customerPath&&req.method==='GET')return json(res,200,{customer:customers.get(session,customerPath[1])});
+ if(customerPath&&req.method==='PATCH'){
+  auth.requirePermission(session,'customers.write');
+  const input=await body(req),fresh=freshMutation('customers.write');
+  return json(res,200,customers.update(fresh,customerPath[1],input));
+ }
  if(url.pathname==='/api/suppliers'&&req.method==='GET')return json(res,200,suppliers.list(session,Object.fromEntries(url.searchParams)));
  if(url.pathname==='/api/suppliers'&&req.method==='POST'){auth.requirePermission(session,'suppliers.write');const input=await body(req),fresh=auth.session(token);auth.requirePermission(fresh,'suppliers.write');if(req.headers['x-zhirox-csrf']!==fresh.csrf)throw new DomainError('دانیشتن گۆڕاوە',403);return json(res,201,suppliers.create(fresh,input));}
  const supplierPath=url.pathname.match(/^\/api\/suppliers\/([^/]+)$/);if(supplierPath&&req.method==='GET')return json(res,200,suppliers.get(session,supplierPath[1]));
