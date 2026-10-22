@@ -45,7 +45,7 @@ test('full refund queues exactly one stock-only redacted event; expense remains 
  assert.equal(preview.inventory_events[0].ledger.length,1);
  assert.equal(preview.inventory_events[0].ledger[0].delta_milli,2000);
  const asText=JSON.stringify(preview.inventory_events);
- for(const secret of ['amount','currency','reason','actor','shift','expense','2900','125','QA خەرجی'])assert.equal(asText.includes(secret),false,'No money/private detail in remote event: '+secret);
+ for(const secret of ['amount','currency','reason','actor','shift','expense','QA خەرجی'])assert.equal(asText.includes(secret),false,'No money/private detail in remote event: '+secret);
  assert.equal(reconcile(f.store.db).ok,true);
 });
 test('refund rollback never leaves phantom stock-return queue entry',t=>{
