@@ -23,7 +23,11 @@ async function launch(dir,port,adjustmentFlag){
  child.kill('SIGTERM');throw Error('server startup timed out: '+err);
 }
 async function stop(child){
- if(child&&child.exitCode===null){child.kill('SIGTERM');await once(child,'exit');}
+ if(child&&child.exitCode===null&&child.signalCode===null){
+  const exited=once(child,'exit').catch(()=>{});
+  child.kill('SIGTERM');
+  await Promise.race([exited,new Promise((_,reject)=>setTimeout(()=>reject(Error('QA child stop timeout')),15000))]);
+ }
 }
 test('cash refunds and expenses HTTP require independent POST gate and CSRF, remain immutable through restart',async t=>{
  const dir=mkdtempSync(join(tmpdir(),'zhirox-adjustment-api-')),port=39000+Math.floor(Math.random()*7000);
