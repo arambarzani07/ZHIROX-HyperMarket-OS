@@ -87,6 +87,10 @@ Chrome/Edge ـی Headless لە Windows، 58mm/80mm CSS و RTL و درێژبوو�
 
 Cash Adjustment ـەکان بە خشتەی نەگۆڕدراو و Cash Shift ـی کراوە و stock reversal ledger تۆمار دەکرێن؛ Full Refund و Expense تەنها بۆ خاوەن/بەڕێوەبەر و بە دوو Flag ـی جیا، بە بنەڕەت ناچالاکن. **Void ـی پسوولەی تەواوبوو، Partial Refund و Cloud Sync ـی گەڕاندنەوە جێبەجێ نەکراون**. Reconciliation و copy-only recovery هەمان ژورنالە نوێیەکان دەپشکنن. [وردەکاری](CASH.md).
 
+## Cloud Refund Stock Readiness — 0.31.0-dev.0 (QA، نەک Production)
+
+بەبێ ناردنی هیچ پارەیەک، Refund ـی تەواو لە transaction دا Outbox ـێکی `stock.refund_created` بۆ گەڕاندنەوەی کۆگا ئامادە دەکات. Expense و Cash Ledger ناوخۆیین؛ remote ingestion ـی ئەم جۆرە Event ـە هێشتا پەسەند نەکراوە. Sync بە fail-closed وستاوە تا SQL migration، verification ـی RLS، idempotency، و stock parity لە Staging پشتڕاست دەبنەوە. [وردەکاری](CLOUD_REFUND_QA.md).
+
 ## قۆناغی داهاتوو
 
 ١. دەسەڵاتی وردتر بۆ کردارە داهاتووەکان و ڕێگای گەڕاندنەوەی دەستگەیشتن لە لەبیرچوونی وشەی نهێنی.
