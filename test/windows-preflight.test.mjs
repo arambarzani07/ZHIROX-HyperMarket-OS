@@ -61,7 +61,17 @@ test('shows manual cash gates without enabling them or claiming hardware verific
 test('packaged CMD launcher forces loopback and cash posting OFF, without touching old POS',()=>{
  const launcher=readFileSync(fileURLToPath(new URL('../Start-ZHIROX.cmd',import.meta.url)),'utf8');
  const packager=readFileSync(fileURLToPath(new URL('../scripts/package-windows.mjs',import.meta.url)),'utf8');
- for(const text of ['set "ZHIROX_BIND=127.0.0.1"','set "ZHIROX_CASH_ACCOUNTING="','set "ZHIROX_PURCHASE_POSTING="','windows-preflight.mjs','--strict'])assert.ok(launcher.includes(text));
+ for(const text of ['set "ZHIROX_BIND=127.0.0.1"','set "ZHIROX_CASH_ACCOUNTING="','set "ZHIROX_PURCHASE_POSTING="','set "ZHIROX_DATA_DIR=%LOCALAPPDATA%\\ZHIROX-HyperMarket-OS\\qa-portable"','runtime\\node.exe','windows-preflight.mjs','--strict'])assert.ok(launcher.includes(text));
  for(const forbidden of ['Admin.exe','Cashier.exe','SQL Server','taskkill','reg add','sc stop','net stop'])assert.equal(launcher.toLowerCase().includes(forbidden.toLowerCase()),false);
  assert.ok(packager.includes("'Start-ZHIROX.cmd'"));
+});
+
+test('self-contained QA distribution validates official Node archive, bundles license and never packages market data',()=>{
+ const ps=readFileSync(fileURLToPath(new URL('../scripts/package-windows-selfcontained.ps1',import.meta.url)),'utf8');
+ const win=readFileSync(fileURLToPath(new URL('../.github/workflows/windows-qa.yml',import.meta.url)),'utf8');
+ const pkg=readFileSync(fileURLToPath(new URL('../package.json',import.meta.url)),'utf8');
+ for(const part of ['nodejs.org/dist','SHASUMS256.txt','Get-FileHash','Node-LICENSE.txt','node-manifest.json','Compress-Archive','qa_only'])assert.ok(ps.includes(part),part);
+ for(const part of ['package-windows-selfcontained.ps1','node_exe_sha256','Node-LICENSE.txt','ZHIROX-Windows-SelfContained-QA','upload-artifact@v4'])assert.ok(win.includes(part),part);
+ assert.ok(pkg.includes('"version": "0.25.0-dev.0"'));
+ assert.ok(!ps.includes('Admin.exe')&&!ps.includes('Cashier.exe'));
 });
