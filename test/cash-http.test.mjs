@@ -27,7 +27,7 @@ test('cash shift HTTP enforces CSRF, role guards and atomic net-of-change sale s
  const close=await send('/api/cash/shifts/'+shift.id+'/close',{request_id:randomUUID(),counted_amount:2300},headers);
  assert.equal(close.status,200);
  assert.equal((await close.json()).shift.discrepancy,-200);
- cash=await(await fetch(base+'/api/cash',{headers:{Cookie:cookie}})).json();assert.equal(cash.shifts.length,0);
+ cash=await(await fetch(base+'/api/cash',{headers:{Cookie:cookie}})).json();assert.equal(cash.shifts.length,0);assert.equal(cash.recently_closed.length,1);assert.equal(cash.recently_closed[0].discrepancy,-200);
  assert.equal((await send('/api/sales',{...sale,request_id:randomUUID()},headers)).status,409);
  const inventory=await(await fetch(base+'/api/inventory?q=M1',{headers:{Cookie:cookie}})).json();
  assert.equal(inventory.products[0].stock_milli,19000);
