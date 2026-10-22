@@ -78,13 +78,13 @@ async function submit(kind,input){
    const explanation=reason(input.reason);
    if(kind==='expense'){
     if(!shiftFor(input.currency))throw Error('سندوقی ئەم دراوە کراوە نییە');
-    pending={kind,path:'/api/cash/expenses',payload:{request_id:crypto.randomUUID(),currency:input.currency,amount:amount(input.amount,input.currency),reason:explanation}};
+    pending={kind,path:'/api/cash/expenses',payload:{request_id:crypto.randomUUID(),currency:input.currency,amount:amount(input.amount,input.currency),reason:explanation},display:'خەرجی '+fmt(amount(input.amount,input.currency),input.currency)+' '+input.currency};
    }else{
     const sale=receipts.find(r=>r.id===input.sale_id);
     if(!sale||!shiftFor(sale.currency))throw Error('پسوولە یان سندوقی هاودراو نییە');
-    pending={kind,path:'/api/cash/refunds/'+encodeURIComponent(sale.id),payload:{request_id:crypto.randomUUID(),currency:sale.currency,reason:explanation}};
+    pending={kind,path:'/api/cash/refunds/'+encodeURIComponent(sale.id),payload:{request_id:crypto.randomUUID(),currency:sale.currency,reason:explanation},display:'پسوولەی ژمارە '+sale.receipt_no+' · '+fmt(sale.total,sale.currency)+' '+sale.currency};
    }
-   if(!window.confirm('کرداری '+(kind==='expense'?'خەرجی':'Refund')+' لە Ledger تۆمار بکرێت؟\nدراو: '+pending.payload.currency+'\nهۆکار: '+explanation)){
+   if(!window.confirm('کرداری '+(kind==='expense'?'خەرجی':'Refund')+' لە Ledger تۆمار بکرێت؟\n'+pending.display+'\nهۆکار: '+explanation)){
     pending=null;paint();return;
    }
   }else if(pending.kind!==kind)throw Error('سەرەتا ئەنجامی داواکاری پێشوو پشتڕاست بکەرەوە');
