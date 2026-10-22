@@ -1,10 +1,10 @@
-# Windows Acceptance Checklist — ZHIROX HyperMarket OS 0.26.0-dev.0
+# Windows Acceptance Checklist — ZHIROX HyperMarket OS 0.27.0-dev.0
 
 **Status:** NOT RUN on the supermarket's actual Windows PC. This is a QA protocol, not evidence of passing hardware tests. Existing Admin.exe, Cashier.exe, SQL Server and attached printers remain **100% read-only**; run tests only in an isolated ZHIROX data directory with dedicated test devices or user-authorized hardware.
 
 ## Windows CI: proven only on temporary runner
 
-- GitHub Actions Windows Node 24 checks the approved design checksum, source syntax, read-only preflight, ZIP SHA-256, packaged files and test-data cash/purchase HTTP flows.
+- GitHub Actions Windows Node 24 checks the approved design checksum, source syntax, read-only preflight, ZIP SHA-256, packaged files, Sorani receipt escaping/58–80mm rendering, and test-data cash/purchase HTTP flows.
 - Two unsigned QA ZIPs and their SHA-256 files are produced as an ephemeral 7-day GitHub Actions artifact, not an installer or production release. The x64 self-contained ZIP includes an upstream checksum-verified Node 24 node.exe and its Node-LICENSE.txt; no separate Node installation required for that ZIP.
 - GitHub CI success does **not** check a supermarket POS device or authorize deployment.
 
@@ -34,7 +34,8 @@
 - [ ] Run `powershell.exe -NoProfile -File scripts/windows-device-inspect.ps1` on authorized Windows QA hardware, review local printer names/ports without printing anything.
 - [ ] Run `runtime/node.exe scripts/scanner-readonly.mjs` and scan product unit/carton/scale labels; compare captured text with labels and preserve leading zeros.
 - [ ] Confirm that 27-prefix scale codes are NOT converted to weight/price until vendor label rules, decimal scale and unit are independently documented.
-- [ ] Discover Windows printer names read-only; print a TEST receipt only with permission. Check Sorani RTL, size, non-Latin glyphs, unique receipt ID, paper feed and change due.
+- [ ] Discover Windows printer names read-only; preview a saved TEST receipt at **58mm then 80mm** without printing, checking Sorani RTL, line and grand totals, change, date and line breaks. [Print QA](PRINT_QA.md).
+- [ ] Print a TEST receipt only with explicit permission, after choosing matching thermal paper size in Windows browser Print dialog; check glyph shaping, width, page breaks and paper feed.
 - [ ] Scan existing unit/carton barcode and weighted scale barcode beginning **27** (seven-digit product code rule), without assigning/replacing any real product data.
 - [ ] Verify scale quantity, carton units, decimal precision, scanner disconnect/reconnect and printer failure reporting.
 - [ ] Observe cash-drawer open pulse using only dedicated test hardware if available and expressly authorized.
