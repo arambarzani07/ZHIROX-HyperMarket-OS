@@ -55,6 +55,14 @@
 - [ ] Verify backup schema, cash/stock reconciliation and copy-only restore preserve refund/expense journals; no automatic stock or cash repair.
 - [ ] **Cloud adjustment synchronization, on-site printer hardware, cash drawer and real customer refund workflows have NOT been accepted.**
 
+## Windows live-backend UI integration — refund and cash expenses
+- [x] Source and native Windows QA checks exercise the authenticated cash adjustment UI against server-gated controls with simulated network responses.
+- [x] The refund form contains **sale ID, currency, reason and original request_id only**; no manually editable refund amount.
+- [x] After lost HTTP acknowledgment the same request_id is retried, no new mutation is generated.
+- [ ] On an **isolated QA Windows PC**, verify that the entire cash page loads real SQLite shift/history and refund/expense post options appear only after explicit QA posting gates are enabled.
+- [ ] Validate separate owner/manager/cashier accounts, currency matching, partial/duplicate refunds refused, actual receipt listing, and browser refresh after disconnected requests.
+- [ ] On the real market PC, perform only owner-approved test-device QA; legacy Admin.exe, Cashier.exe, SQL Server and original printers stay read-only.
+
 ## 0.31 — Cloud stock-return staging (non-network QA)
 - [ ] Check that a **full refund stages ONE stock.refund_created outbox row** atomically with stock and cash adjustments; duplicate replay stages none.
 - [ ] Check a cash expense has **no cloud outbox row**; do not disclose cash amount, currency, cashier, reason or shift information in future stock payloads.
