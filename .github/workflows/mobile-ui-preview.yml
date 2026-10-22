@@ -1,0 +1,65 @@
+name: ZHIROX iPhone UI Preview (offline QA only)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'design/approved-card-home.html'
+      - 'design/manifest.json'
+      - 'scripts/mobile-ui-preview.mjs'
+      - 'test/mobile-ui-preview.test.mjs'
+      - '.github/workflows/mobile-ui-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  iphone-offline-preview:
+    name: Exact locked six-card mobile HTML + screenshot
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify design lock and offline preview safety
+        shell: pwsh
+        run: |
+          node scripts/verify-design.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Locked design changed' }
+          node --test test/mobile-ui-preview.test.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'iPhone preview test failed' }
+      - name: Package exact offline UI preview
+        shell: pwsh
+        run: |
+          node scripts/mobile-ui-preview.mjs dist/iphone-preview
+          if ($LASTEXITCODE -ne 0) { throw 'UI preview creation failed' }
+      - name: Render true iPhone viewport screenshot on Windows Chrome or Edge
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $chrome = Join-Path $env:ProgramFiles 'Google\Chrome\Application\chrome.exe'
+          if (!(Test-Path $chrome)) { $chrome = Join-Path $env:ProgramFiles 'Microsoft\Edge\Application\msedge.exe' }
+          if (!(Test-Path $chrome)) { throw 'Chrome/Edge browser is absent' }
+          $html = (Resolve-Path 'dist/iphone-preview/ZHIROX-iPhone-Preview.html').Path
+          $png = Join-Path (Resolve-Path 'dist/iphone-preview').Path 'ZHIROX-iPhone-Preview.png'
+          $url = [Uri]::new($html).AbsoluteUri
+          $profile = Join-Path $env:RUNNER_TEMP 'zhirox-mobile-qa-browser'
+          & $chrome --headless=new --disable-gpu --disable-extensions --disable-background-networking --no-first-run --no-default-browser-check --hide-scrollbars --user-data-dir="$profile" --window-size=430,930 --screenshot="$png" "$url"
+          if ($LASTEXITCODE -ne 0) { throw 'Mobile screenshot failed' }
+          if (!(Test-Path $png) -or (Get-Item $png).Length -lt 4000) { throw 'Empty mobile UI screenshot' }
+          $header = [System.IO.File]::ReadAllBytes($png)
+          $signature = [BitConverter]::ToString($header[0..7]).Replace('-', '')
+          if ($signature -ne '89504E470D0A1A0A') { throw 'Not a PNG screenshot' }
+          Write-Output 'Verified exact approved Sorani RTL UI screenshot; no database / sales / network used.'
+      - name: Upload phone-readable preview and image
+        uses: actions/upload-artifact@v4
+        with:
+          name: zhirox-iphone-ui-preview
+          path: |
+            dist/iphone-preview/ZHIROX-iPhone-Preview.html
+            dist/iphone-preview/ZHIROX-iPhone-Preview.png
+          retention-days: 7
+          if-no-files-found: error
