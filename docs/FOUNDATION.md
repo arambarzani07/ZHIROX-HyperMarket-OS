@@ -75,6 +75,10 @@ Node.js 24+، هیچ dependency ـی runtime پێویست نییە. SQLite لە 
 
 ڕووکاری پسوولەی کوردی RTL بە هەڵبژاردنی 58mm یان 80mm، پشکنینی کۆی پارە و گەڕاوە، پاراستنی ناوی کاڵا لە HTML injection و چاپکردنی بە کرتەی بەکارهێنەر زیاد کرا. ئەمە native Browser Print dialog ـە؛ هیچ خزمەتگوزاریی ESC/POS، Cash Drawer Pulse، یان Printer Driver ناگۆڕێت. Printer و کاغەزی ڕاستەقینە هێشتا تاقی نەکراوەتەوە. [وردەکاری](PRINT_QA.md).
 
+## تاقیکردنەوەی بینراوی پسوولە لە Windows (0.28.0-dev.0 — Branch، نەک Production)
+
+Chrome/Edge ـی Headless لە Windows، 58mm/80mm CSS و RTL و درێژبوونی ٣٨ کاڵا بە داتای ساختەی QA دەپشکنێت. سێ PNG و `audit.json` بە جیا لە ZIP دەخرێنە GitHub Actions؛ هیچ پڕینتەری فیزیکی، داتابەیس، سندوق یان SQL Server دەستکاری ناکرێت. [ڕێنمایی چاپ](PRINT_QA.md).
+
 ## قۆناغی داهاتوو
 
 ١. دەسەڵاتی وردتر بۆ کردارە داهاتووەکان و ڕێگای گەڕاندنەوەی دەستگەیشتن لە لەبیرچوونی وشەی نهێنی.
