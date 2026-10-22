@@ -15,7 +15,8 @@ export function openSync(store,config,{transport=fetch,now=()=>new Date(),timeou
  db.exec(`CREATE TABLE IF NOT EXISTS sync_state(id INTEGER PRIMARY KEY CHECK(id=1),market_id TEXT NOT NULL,device_id TEXT NOT NULL,last_success TEXT,last_attempt TEXT,last_error TEXT,next_attempt TEXT,failures INTEGER NOT NULL DEFAULT 0);`);
  let busy=false,stopped=false;
  if(config){const old=db.prepare('SELECT * FROM sync_state WHERE id=1').get();if(old&&(old.market_id!==config.market_id||old.device_id!==config.device_id))throw new Error('Sync identity mismatch; preserve the original database and device configuration');if(!old)db.prepare('INSERT INTO sync_state(id,market_id,device_id) VALUES(1,?,?)').run(config.market_id,config.device_id);}
- const status=()=>{const state=db.prepare('SELECT * FROM sync_state WHERE id=1').get();return {configured:Boolean(config),running:busy,pending:db.prepare('SELECT count(*) n FROM outbox WHERE synced_at IS NULL').get().n,market_id:config?.market_id||null,device_id:config?.device_id||null,last_success:state?.last_success||null,last_attempt:state?.last_attempt||null,error:state?.last_error||null,next_attempt:state?.next_attempt||null};};
+ const blocked=()=>Boolean(db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='cash_adjustments'").get()&&db.prepare('SELECT 1 FROM cash_adjustments LIMIT 1').get());
+ const status=()=>{const state=db.prepare('SELECT * FROM sync_state WHERE id=1').get(),adjustments_blocked=blocked();return {configured:Boolean(config),adjustments_blocked,running:busy,pending:db.prepare('SELECT count(*) n FROM outbox WHERE synced_at IS NULL').get().n,market_id:config?.market_id||null,device_id:config?.device_id||null,last_success:state?.last_success||null,last_attempt:state?.last_attempt||null,error:adjustments_blocked?'adjustment_protocol_unavailable':state?.last_error||null,next_attempt:state?.next_attempt||null};};
  const post=async event=>{
   const response=await transport(config.endpoint,{method:'POST',redirect:'error',headers:{'Content-Type':'application/json','X-Zhirox-Device':config.device_id,'X-Zhirox-Token':config.token},body:JSON.stringify({market_id:config.market_id,event}),signal:AbortSignal.timeout(timeout)});
   if(!response.ok)throw new Error(response.status===401||response.status===403?'device_denied':response.status===409?'cloud_conflict':`cloud_http_${response.status}`);
@@ -23,6 +24,8 @@ export function openSync(store,config,{transport=fetch,now=()=>new Date(),timeou
  };
  async function run({force=false}={}) {
   if(!config)throw new DomainError('هاوکاتکردن ڕێک نەخراوە',409);
+  // Local cash history is never uploaded; block ALL network traffic for adjustments until remote inventory-only protocol is independently certified.
+  if(blocked())return status();
   if(busy)return status();
   if(stopped)return status();
   const state=status();if(!force&&state.next_attempt&&state.next_attempt>now().toISOString())return state;
