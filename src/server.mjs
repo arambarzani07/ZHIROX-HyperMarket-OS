@@ -74,6 +74,25 @@ const server=createServer(async(req,res)=>{res.setHeader('X-Content-Type-Options
  if(url.pathname==='/api/cash'&&req.method==='GET'){auth.requirePermission(session,'cash.read');return json(res,200,{enabled:cashAccountingEnabled,...cash.status(session)});}
  if(url.pathname==='/api/cash/shifts'&&req.method==='POST'){auth.requirePermission(session,'cash.manage');if(!cashAccountingEnabled)throw new DomainError('سندوق هێشتا چالاک نەکراوە',409);const input=await body(req),fresh=auth.session(token);auth.requirePermission(fresh,'cash.manage');if(req.headers['x-zhirox-csrf']!==fresh.csrf)throw new DomainError('دانیشتن گۆڕاوە',403);return json(res,201,cash.open(fresh,input));}
  const closeShift=url.pathname.match(/^\/api\/cash\/shifts\/([0-9a-f-]{36})\/close$/i);if(closeShift&&req.method==='POST'){auth.requirePermission(session,'cash.manage');if(!cashAccountingEnabled)throw new DomainError('سندوق هێشتا چالاک نەکراوە',409);const input=await body(req),fresh=auth.session(token);auth.requirePermission(fresh,'cash.manage');if(req.headers['x-zhirox-csrf']!==fresh.csrf)throw new DomainError('دانیشتن گۆڕاوە',403);return json(res,200,cash.close(fresh,closeShift[1],input));}
+ if(url.pathname==='/api/purchases/intents'&&req.method==='GET')return json(res,200,purchases.listIntents(session));
+ if(url.pathname==='/api/purchases/intents'&&req.method==='POST'){
+  auth.requirePermission(session,'purchases.create');
+  if(!purchasePostingEnabled)throw new DomainError('تۆمارکردنی کڕین هێشتا چالاک نەکراوە',409);
+  const input=await body(req),fresh=auth.session(token);
+  auth.requirePermission(fresh,'purchases.create');
+  if(req.headers['x-zhirox-csrf']!==fresh.csrf)throw new DomainError('دانیشتن گۆڕاوە',403);
+  return json(res,201,purchases.stage(fresh,input));
+ }
+ const intentPost=url.pathname.match(/^\/api\/purchases\/intents\/([A-Za-z0-9-]{16,80})\/post$/);
+ if(intentPost&&req.method==='POST'){
+  auth.requirePermission(session,'purchases.create');
+  if(!purchasePostingEnabled)throw new DomainError('تۆمارکردنی کڕین هێشتا چالاک نەکراوە',409);
+  const payload=await body(req);
+  if(!payload||typeof payload!=='object'||Array.isArray(payload)||Object.keys(payload).length)throw new DomainError('داواکاریی تۆمارکردن نادروستە');
+  const fresh=auth.session(token);auth.requirePermission(fresh,'purchases.create');
+  if(req.headers['x-zhirox-csrf']!==fresh.csrf)throw new DomainError('دانیشتن گۆڕاوە',403);
+  return json(res,201,purchases.intentPost(fresh,intentPost[1]));
+ }
  if(url.pathname==='/api/purchases/config'&&req.method==='GET'){auth.requirePermission(session,'purchases.preview');return json(res,200,{posting_enabled:purchasePostingEnabled});}
  if(url.pathname==='/api/purchases'&&req.method==='GET')return json(res,200,purchases.list(session,Object.fromEntries(url.searchParams)));
  const purchasePath=url.pathname.match(/^\/api\/purchases\/([0-9a-f-]{36})$/i);if(purchasePath&&req.method==='GET')return json(res,200,purchases.get(session,purchasePath[1]));
