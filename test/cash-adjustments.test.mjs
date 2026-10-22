@@ -14,7 +14,7 @@ function fixture(t,{currency='IQD'}={}){
  const cash=openCash(store),adjustments=openCashAdjustments(store);
  store.attachSaleCashHook((actor,r)=>cash.recordSale(actor,r));
  const shift=cash.open(as('owner'),{request_id:randomUUID(),currency,opening_amount:5000}).shift;
- const sale=store.sell({request_id:randomUUID(),currency,received:2000,items:[{product_id:p.id,unit:'unit',quantity:2}]},'owner');
+ const sale=store.sell({request_id:randomUUID(),currency,received:5000,items:[{product_id:p.id,unit:'unit',quantity:2}]},'owner');
  const make=(data={})=>({request_id:randomUUID(),currency,reason:'QA بەڵگەنامەی پشکنینی پارە',...data});
  t.after(()=>store.close());
  return{store,as,p,cash,adjustments,shift,sale,make};
