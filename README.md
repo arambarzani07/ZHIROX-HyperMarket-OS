@@ -79,6 +79,7 @@ Production branch: `main`
 - [پشکنینی بێ نووسینی پڕینتەر، USB/HID و بارکۆدی 27 — 0.26.0-dev.0](docs/HARDWARE_QA.md)
 - [پسوولەی کوردی RTL و تاقیکردنەوەی بینراوی Chrome/Edge بۆ 58/80mm — 0.28.0-dev.0](docs/PRINT_QA.md)
 - [پاراستنی Cash Ledger، Full Refund و Expense ـی قوفڵکراو — 0.30.0-dev.0](docs/CASH.md)
+- [پەیوەستکردنی ڕووکاری سندوق و Refund بە Backend ـی SQLite ـی ڕاستەقینە، بە قوفڵی تۆمارکردن](docs/WINDOWS_REAL_CASH_INTEGRATION.md)
 - [QA ـی ئامادەکردنی Refund بۆ هاوتاکردنی **کۆگا تەنها** بە Supabase، بێ ناردنی پارە — 0.31.0-dev.0](docs/CLOUD_REFUND_QA.md)
 - [PostgreSQL 17 ـی جیا بۆ تاقیکردنەوەی Refund کۆگا، RLS، یەکتایی و Rollback — 0.32.0-dev.0](docs/REFUND_POSTGRES_QA.md)
 - [Capability Handshake، پەڕەبەندی کۆگا و پشکنینی parity ـی ناوخۆ، بێ Sync ـی ڕاستەقینە — 0.33.0-dev.0](docs/CAPABILITY_PARITY_QA.md)
