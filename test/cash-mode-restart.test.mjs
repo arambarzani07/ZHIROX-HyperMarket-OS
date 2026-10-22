@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
-import {mkdtempSync,rmSync} from 'node:fs';
+import {mkdtempSync,rmSync,mkdirSync,readFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {once} from 'node:events';
@@ -10,6 +10,8 @@ import {openStore} from '../src/store.mjs';
 import {openAuth,PERMISSIONS} from '../src/auth.mjs';
 import {openCash} from '../src/cash.mjs';
 import {reconcile} from '../src/reconcile.mjs';
+import {prepareRecovery} from '../src/recovery.mjs';
+import {createHash} from 'node:crypto';
 
 function stopProcess(proc){
  if(!proc||proc.exitCode!==null)return Promise.resolve();
@@ -121,4 +123,39 @@ test('receipt request ID replays exactly once after closing and reopening cash s
  assert.equal(reconcile(store.db).ok,true);
  assert.throws(()=>store.sell({...payload,received:3000},'owner'),/ناسنامەی داواکاری/);
  assert.equal(reconcile(store.db).ok,true);
+});
+
+test('copy-only recovery of CLOSED shift retains sticky cash mode and never rewrites original verified backup',async t=>{
+ const root=mkdtempSync(join(tmpdir(),'zhirox-cash-restore-')),live=join(root,'live'),copy=join(root,'restored');
+ mkdirSync(live);
+ t.after(()=>rmSync(root,{recursive:true,force:true}));
+ const store=openStore(join(live,'zhirox.sqlite')),auth=openAuth(store.db);
+ const setup=await auth.setup({name:'QA Owner',username:'qa-owner',password:'closed-recovery-qa-passphrase'});
+ const session=auth.session(setup.token),cash=openCash(store);
+ const shift=cash.open(session,{request_id:randomUUID(),currency:'IQD',opening_amount:3000}).shift;
+ cash.close(session,shift.id,{request_id:randomUUID(),counted_amount:2500});
+ assert.equal(cash.hasOpen(),false);assert.equal(cash.hasHistory(),true);
+ assert.equal(reconcile(store.db).ok,true);
+ const backup=await store.backup(join(live,'backups'));
+ const backupPath=join(live,'backups',backup.name),originalHash=createHash('sha256').update(readFileSync(backupPath)).digest('hex');
+ store.close();
+ const report=await prepareRecovery({backup:backupPath,output:copy,liveDataDir:live});
+ assert.equal(report.reconciliation.ok,true);
+ assert.equal(report.cloud_sync_enabled,false);
+ assert.equal(report.requires_review,true);
+ assert.equal(createHash('sha256').update(readFileSync(backupPath)).digest('hex'),originalHash);
+ const recovered=openStore(join(copy,'zhirox.sqlite'));
+ try{
+  const revivedCash=openCash(recovered);
+  assert.equal(revivedCash.hasOpen(),false);
+  assert.equal(revivedCash.hasHistory(),true);
+  assert.equal(reconcile(recovered.db).ok,true);
+ }finally{recovered.close();}
+ const attempted=await boot(copy,{enabled:false,port:41000+Math.floor(Math.random()*8000)});
+ assert.equal(attempted.started,false);
+ assert.match(attempted.output,/historical cash shifts exist/);
+ const allowed=await boot(copy,{enabled:true,port:41000+Math.floor(Math.random()*8000)});
+ assert.equal(allowed.started,true);
+ await stopProcess(allowed.child);
+ assert.equal(createHash('sha256').update(readFileSync(backupPath)).digest('hex'),originalHash);
 });
