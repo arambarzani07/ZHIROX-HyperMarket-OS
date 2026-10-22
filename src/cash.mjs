@@ -93,7 +93,8 @@ export function openCash(store){
    allowed(session,'cash.read');
    const shifts=db.prepare('SELECT * FROM cash_shifts WHERE closed_at IS NULL ORDER BY currency').all().map(publicShift);
    const events=session.user.role==='cashier'?db.prepare('SELECT id,shift_id,currency,kind,reference_id,actor_id,amount,created_at FROM cash_ledger WHERE actor_id=? ORDER BY rowid DESC LIMIT 50').all(session.user.id):db.prepare('SELECT id,shift_id,currency,kind,reference_id,actor_id,amount,created_at FROM cash_ledger ORDER BY rowid DESC LIMIT 50').all();
-   return{shifts,events};
+   const recently_closed=session.user.permissions.includes('cash.manage')?db.prepare('SELECT * FROM cash_shifts WHERE closed_at IS NOT NULL ORDER BY closed_at DESC LIMIT 20').all().map(publicShift):[];
+   return{shifts,events,recently_closed};
   },
   recordSale(actor,receipt){money(receipt.total,'فرۆشتن');movement(actor,receipt.currency,'sale',receipt.id,receipt.total);},
   recordPurchase(actor,purchase){money(purchase.total,'کڕین');movement(actor,purchase.currency,'purchase',purchase.id,-purchase.total);}
