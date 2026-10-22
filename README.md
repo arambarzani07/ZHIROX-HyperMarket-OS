@@ -49,7 +49,7 @@ Production branch: `main`
 
 - [هاوکاتکردنی Supabase — 0.3.0](docs/SYNC.md)
 
-- [پاکێجی کارپێکردنی Windows — 0.3.1](docs/WINDOWS.md)
+- [پاکێجی Portable Windows و Preflight ـی بێ نووسین — 0.24.0-dev.0](docs/WINDOWS.md)
 
 - [سەبەتەی پارێزراو و فرۆشتنی بێ دووبارە — 0.4.0](docs/CHECKOUT.md)
 
@@ -75,3 +75,4 @@ Production branch: `main`
 - [کڕینی نەقد، ledger و cloud sync ـی سنووردار — 0.21.0](docs/PURCHASE_PREVIEW.md)
 - [سندوقی نەقد و Cash Ledger ـی یەکپارچە — 0.22.0](docs/CASH.md)
 - [داواکاریی کڕینی پارێزراو و گەڕاندنەوەی سندوق — 0.23.0](docs/DURABLE_PURCHASES.md)
+- [لیستی پشکنینی Windows و هاردوێر — قۆناغی QA](docs/WINDOWS_QA.md)
