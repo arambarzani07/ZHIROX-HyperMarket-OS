@@ -1,10 +1,10 @@
-# Windows Acceptance Checklist — ZHIROX HyperMarket OS 0.28.0-dev.0
+# Windows Acceptance Checklist — ZHIROX HyperMarket OS 0.29.0-dev.0
 
 **Status:** NOT RUN on the supermarket's actual Windows PC. This is a QA protocol, not evidence of passing hardware tests. Existing Admin.exe, Cashier.exe, SQL Server and attached printers remain **100% read-only**; run tests only in an isolated ZHIROX data directory with dedicated test devices or user-authorized hardware.
 
 ## Windows CI: proven only on temporary runner
 
-- GitHub Actions Windows Node 24 checks the approved design checksum, source syntax, read-only preflight, ZIP SHA-256, packaged files, Sorani receipt escaping/58–80mm rendering, and test-data cash/purchase HTTP flows.
+- GitHub Actions Windows Node 24 checks the approved design checksum, source syntax, read-only preflight, ZIP SHA-256, packaged files, Sorani receipt escaping/58–80mm rendering, durable closed-shift mode lock, cash reconciliation and test-data cash/purchase HTTP flows.
 - Two unsigned QA ZIPs and their SHA-256 files are produced as an ephemeral 7-day GitHub Actions artifact, not an installer or production release. The x64 self-contained ZIP includes an upstream checksum-verified Node 24 node.exe and its Node-LICENSE.txt; no separate Node installation required for that ZIP.
 - GitHub CI success does **not** check a supermarket POS device or authorize deployment.
 
@@ -50,7 +50,11 @@
 - [ ] Create and verify a complete SQLite backup including cash shifts, cash ledger, immutable stock ledgers, purchase intents, audit, sessions and outbox.
 - [ ] Use `prepareRecovery` in a **new separate folder**; confirm old session tokens are revoked **in the copy only**, original owner can log into copy, cash movements and pending intents are preserved.
 - [ ] Compare source SHA-256 before and after; no source mutation or old POS changes.
-- [ ] Verify rollback/startup behavior when cash-accounting environment flag is disabled while a restored shift remains open.
+- [ ] Verify fail-closed startup when cash-accounting environment flag is disabled and **ANY** restored shift exists, **including closed shifts**.
+- [ ] Verify a mismatched cash shift balance in a QA copy blocks startup **even with accounting enabled**, with no automatic repair.
+- [ ] Confirm a **legacy/no-shift** test database still starts with the flag disabled; no existing data is migrated or rewritten just to activate a gate.
+- [ ] Replay an existing sale request ID after opening a subsequent test shift: verify the same receipt returns, with **zero additional cash movement or stock change**.
+- [ ] Confirm the original backup file SHA-256 is unchanged after preparing a separate restored closed-shift copy.
 - [ ] Review test results, market policy for refunds, expenses and shift handovers, and receive explicit approval **before merging or deploying**.
 
 **Acceptance gate:** GitHub CI is not proof of physical Windows, printer, scale or real cash operation. Keep PR Draft and production posting disabled until these checks are performed on authorized test systems.
