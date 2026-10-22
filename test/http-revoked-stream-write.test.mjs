@@ -6,6 +6,7 @@ import {request as httpRequest} from 'node:http';
 import {spawn} from 'node:child_process';
 import {once} from 'node:events';
 import {randomUUID} from 'node:crypto';
+import {DatabaseSync} from 'node:sqlite';
 import {mkdtempSync,rmSync,readdirSync,existsSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
@@ -133,4 +134,32 @@ test('streamed product, cart, checkout, sale, backup and sync writes refuse revo
 
  await revokeStream('POST','/api/sync/run',{});
  assert.equal((await http(base,'/api/health','GET',undefined,auth)).body.storage,'sqlite');
+
+ // A separate privileged owner disables a cashier account while the cashier is uploading a cart.
+ // The cached role/permissions from request start must NOT authorize its later SQLite mutation.
+ const added=await http(base,'/api/users','POST',{
+  name:'Cashier temporary QA',username:'revoked-cashier',role:'cashier',
+  password:'QA-password-cashier-revoke-123'
+ },auth);
+ assert.equal(added.status,201,JSON.stringify(added.body));
+ const cashierId=added.body.user.id;
+ const cashierLogin=await http(base,'/api/auth/login','POST',{
+  username:'revoked-cashier',password:'QA-password-cashier-revoke-123'
+ });
+ assert.equal(cashierLogin.status,200);
+ const cashierSession={cookie:cashierLogin.cookie.split(';')[0],csrf:cashierLogin.body.csrf};
+ const slowCart=beginBody(base,'/api/cart','PUT',{
+  revision:0,items:[{product_id:id,unit:'unit',quantity:1}],received:'2200'
+ },cashierSession);
+ await sleep(95);
+ const disabled=await http(base,'/api/users/'+cashierId,'PATCH',{active:false},auth);
+ assert.equal(disabled.status,200,JSON.stringify(disabled.body));
+ assert.equal(disabled.body.user.active,false);
+ const blockedCart=await slowCart.finish();
+ assert.equal(blockedCart.status,401,'deactivated cashier cannot persist an in-flight cart mutation');
+ const db=new DatabaseSync(join(dir,'zhirox.sqlite'),{readOnly:true});
+ try{
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM checkout_drafts WHERE actor_id=?').get(cashierId).n,0,
+   'revoked cashier must not have changed the durable cart');
+ }finally{db.close();}
 });
