@@ -52,6 +52,10 @@ let sync;
 try{sync=openSync(store,readSyncConfig(join(dataDir,'sync-device.json')));}catch{
  const local=openSync(store,null);sync={...local,status:()=>({...local.status(),error:'configuration_invalid'}),async run(){throw new DomainError('ڕێکخستنی کلاود نادروستە؛ کارکردنی ناوخۆ بەردەوامە',409);}};
 }
+// Fail closed if a QA-only refund/expense exists and cloud sync is later configured.
+// Otherwise old sale.created/product events could replay without matching stock/cash reversals.
+if(sync.status().configured&&store.db.prepare('SELECT 1 FROM cash_adjustments LIMIT 1').get())
+ throw new Error('Cloud sync protection: local cash adjustments exist without supported remote adjustment sync; refusing unsafe startup');
 const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.json':'application/json; charset=utf-8'};
 const json=(res,status,body)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(body));};
 async function body(req,maxBytes=131072){if(!/^application\/json(?:;|$)/i.test(req.headers['content-type']||''))throw new DomainError('JSON پێویستە',415);req.setEncoding('utf8');let buffer='',size=0;for await(const chunk of req){size+=Buffer.byteLength(chunk);if(size>maxBytes)throw new DomainError('داواکاری زۆر گەورەیە',413);buffer+=chunk;}try{return JSON.parse(buffer);}catch{throw new DomainError('داواکاری نادروستە');}}
