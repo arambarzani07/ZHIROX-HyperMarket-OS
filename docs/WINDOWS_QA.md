@@ -1,4 +1,4 @@
-# Windows Acceptance Checklist — ZHIROX HyperMarket OS 0.25.0-dev.0
+# Windows Acceptance Checklist — ZHIROX HyperMarket OS 0.26.0-dev.0
 
 **Status:** NOT RUN on the supermarket's actual Windows PC. This is a QA protocol, not evidence of passing hardware tests. Existing Admin.exe, Cashier.exe, SQL Server and attached printers remain **100% read-only**; run tests only in an isolated ZHIROX data directory with dedicated test devices or user-authorized hardware.
 
@@ -31,6 +31,9 @@
 - [ ] Close IQD drawer with actual counted amount different from expected; verify signed discrepancy and recent closed-shift history.
 
 ## 3 — Physical devices: manual observation required
+- [ ] Run `powershell.exe -NoProfile -File scripts/windows-device-inspect.ps1` on authorized Windows QA hardware, review local printer names/ports without printing anything.
+- [ ] Run `runtime/node.exe scripts/scanner-readonly.mjs` and scan product unit/carton/scale labels; compare captured text with labels and preserve leading zeros.
+- [ ] Confirm that 27-prefix scale codes are NOT converted to weight/price until vendor label rules, decimal scale and unit are independently documented.
 - [ ] Discover Windows printer names read-only; print a TEST receipt only with permission. Check Sorani RTL, size, non-Latin glyphs, unique receipt ID, paper feed and change due.
 - [ ] Scan existing unit/carton barcode and weighted scale barcode beginning **27** (seven-digit product code rule), without assigning/replacing any real product data.
 - [ ] Verify scale quantity, carton units, decimal precision, scanner disconnect/reconnect and printer failure reporting.
