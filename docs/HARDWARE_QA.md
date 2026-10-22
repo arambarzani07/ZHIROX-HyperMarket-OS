@@ -34,6 +34,8 @@ The tool preserves all leading zeros, rejects unexpected spaces/control characte
 - Opaque vendor-specific encoded digits: **970**
 - EAN-13 check digit: **9**
 
+**POS protection:** 27-prefix EAN-13 scale candidates (even when registered as a regular barcode) now fail closed in the POS barcode lookup with HTTP 409. A 27-prefix label with an invalid EAN check digit returns HTTP 400; no sale/stock/cash movement starts from that scan. Regular exact unit/carton codes remain unchanged.
+
 **Critical limit:** three encoded digits are *not* sufficient to infer unit type, amount, scale precision or whether the code represents weight or price. Do **not** post stock or money from this read-only decoder. It deliberately returns `quantity:null`, `price:null`, `can_post_sale:false`. Exact unit/carton barcode lookups in the existing POS are left untouched.
 
 To enable weighted-item selling later, collect actual label specifications (weight/price encoding, position and decimal scale), verified scale examples, measurement unit, rounding rules and expected POS stock deduction **before** any transactional integration.
