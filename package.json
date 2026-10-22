@@ -1,6 +1,6 @@
 {
   "name": "zhirox-hypermarket-os",
-  "version": "0.24.0-dev.0",
+  "version": "0.25.0-dev.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -15,6 +15,7 @@
     "doctor": "node scripts/check-runtime.mjs",
     "windows:preflight": "node scripts/windows-preflight.mjs --json --strict",
     "package:windows": "node scripts/package-windows.mjs",
+    "package:windows:selfcontained": "pwsh -NoProfile -File scripts/package-windows-selfcontained.ps1 -SourceZip dist/ZHIROX-Windows-Portable-0.25.0-dev.0.zip -OutputDir dist",
     "recovery:prepare": "node scripts/prepare-recovery.mjs"
   }
 }
