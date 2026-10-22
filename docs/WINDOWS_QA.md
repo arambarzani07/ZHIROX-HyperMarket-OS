@@ -1,4 +1,4 @@
-# Windows Acceptance Checklist — ZHIROX HyperMarket OS 0.30.0-dev.0
+# Windows Acceptance Checklist — ZHIROX HyperMarket OS 0.31.0-dev.0
 
 **Status:** NOT RUN on the supermarket's actual Windows PC. This is a QA protocol, not evidence of passing hardware tests. Existing Admin.exe, Cashier.exe, SQL Server and attached printers remain **100% read-only**; run tests only in an isolated ZHIROX data directory with dedicated test devices or user-authorized hardware.
 
@@ -54,6 +54,14 @@
 - [ ] Crash during a refund must rollback cash, stock, adjustment and access audit in the same transaction.
 - [ ] Verify backup schema, cash/stock reconciliation and copy-only restore preserve refund/expense journals; no automatic stock or cash repair.
 - [ ] **Cloud adjustment synchronization, on-site printer hardware, cash drawer and real customer refund workflows have NOT been accepted.**
+
+## 0.31 — Cloud stock-return staging (non-network QA)
+- [ ] Check that a **full refund stages ONE stock.refund_created outbox row** atomically with stock and cash adjustments; duplicate replay stages none.
+- [ ] Check a cash expense has **no cloud outbox row**; do not disclose cash amount, currency, cashier, reason or shift information in future stock payloads.
+- [ ] Call `node scripts/refund-sync-readiness.mjs --db QA_DATABASE_PATH` on a **test** SQLite database; output only aggregate readiness counts.
+- [ ] With a mocked cloud transport, a database with adjustments must make **zero HTTP requests** and report `adjustment_protocol_unavailable`.
+- [ ] Confirm missing outbox records from historical v0.30 refunds are detected and **not** auto-backfilled.
+- [ ] No live remote SQL migration, Edge Function deploy or Supabase data mutation has been performed. Real cloud sync remains blocked.
 
 ## 4 — Backup/recovery and approval
 - [ ] Create and verify a complete SQLite backup including cash shifts, cash ledger, immutable stock ledgers, purchase intents, audit, sessions and outbox.
