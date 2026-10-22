@@ -49,7 +49,7 @@ Production branch: `main`
 
 - [هاوکاتکردنی Supabase — 0.3.0](docs/SYNC.md)
 
-- [پاکێجی Windows QA ـی خۆبەخۆ بە Node 24 ـی تێخراو — 0.27.0-dev.0](docs/WINDOWS.md)
+- [پاکێجی Windows QA ـی خۆبەخۆ بە Node 24 ـی تێخراو — 0.28.0-dev.0](docs/WINDOWS.md)
 
 - [سەبەتەی پارێزراو و فرۆشتنی بێ دووبارە — 0.4.0](docs/CHECKOUT.md)
 
@@ -77,4 +77,4 @@ Production branch: `main`
 - [داواکاریی کڕینی پارێزراو و گەڕاندنەوەی سندوق — 0.23.0](docs/DURABLE_PURCHASES.md)
 - [لیستی پشکنینی Windows و هاردوێر — قۆناغی QA](docs/WINDOWS_QA.md)
 - [پشکنینی بێ نووسینی پڕینتەر، USB/HID و بارکۆدی 27 — 0.26.0-dev.0](docs/HARDWARE_QA.md)
-- [پسوولەی کوردی RTL و پێشبینینی چاپی 58/80mm — 0.27.0-dev.0](docs/PRINT_QA.md)
+- [پسوولەی کوردی RTL و تاقیکردنەوەی بینراوی Chrome/Edge بۆ 58/80mm — 0.28.0-dev.0](docs/PRINT_QA.md)
