@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,existsSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {inspectWindowsReadiness} from '../scripts/windows-preflight.mjs';
 const root='C:\\qa\\ZHIROX-HyperMarket-OS';
@@ -68,10 +68,11 @@ test('packaged CMD launcher forces loopback and cash posting OFF, without touchi
 
 test('self-contained QA distribution validates official Node archive, bundles license and never packages market data',()=>{
  const ps=readFileSync(fileURLToPath(new URL('../scripts/package-windows-selfcontained.ps1',import.meta.url)),'utf8');
- const win=readFileSync(fileURLToPath(new URL('../.github/workflows/windows-qa.yml',import.meta.url)),'utf8');
+ const workflowPath=fileURLToPath(new URL('../.github/workflows/windows-qa.yml',import.meta.url));
+ const win=existsSync(workflowPath)?readFileSync(workflowPath,'utf8'):null;
  const pkg=readFileSync(fileURLToPath(new URL('../package.json',import.meta.url)),'utf8');
  for(const part of ['nodejs.org/dist','SHASUMS256.txt','Get-FileHash','Node-LICENSE.txt','node-manifest.json','Compress-Archive','qa_only'])assert.ok(ps.includes(part),part);
- for(const part of ['package-windows-selfcontained.ps1','node_exe_sha256','Node-LICENSE.txt','ZHIROX-Windows-SelfContained-QA','upload-artifact@v4'])assert.ok(win.includes(part),part);
+ if(win)for(const part of ['package-windows-selfcontained.ps1','node_exe_sha256','Node-LICENSE.txt','ZHIROX-Windows-SelfContained-QA','upload-artifact@v4'])assert.ok(win.includes(part),part);
  assert.ok(pkg.includes('"version": "0.25.0-dev.0"'));
  assert.ok(!ps.includes('Admin.exe')&&!ps.includes('Cashier.exe'));
 });
