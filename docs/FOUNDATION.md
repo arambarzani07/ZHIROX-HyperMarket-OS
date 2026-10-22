@@ -83,6 +83,10 @@ Chrome/Edge ـی Headless لە Windows، 58mm/80mm CSS و RTL و درێژبوو�
 
 لە دوای یەک شەفتی سندوق، تەنانەت ئەگەر هەموو سندوقەکان داخراوبن، ناچالاککردنی `ZHIROX_CASH_ACCOUNTING` دەستپێکردنی سێرڤەر قوفڵ دەکات. لە restart ـی enabled، cash/stock/sales reconciliation بە شێوەی read-only پێش وەرگرتنی نووسینی نوێ دەکرێت؛ نایەکسانی سێرڤەر ڕادەگرێت، بەبێ auto-repair. دووبارەکردنەوەی sale `request_id` لە شەفتی دواتر هیچ پارەی نوێ تۆمار ناکات؛ recovery ـی شەفتی داخراو لە کۆپێی جیا هەمان قوفڵی پاراستن هەیە. [وردەکاری](CASH.md).
 
+## Refund و Expense ـی پشتڕاستکراوە (0.30.0-dev.0 — QA تەنها)
+
+Cash Adjustment ـەکان بە خشتەی نەگۆڕدراو و Cash Shift ـی کراوە و stock reversal ledger تۆمار دەکرێن؛ Full Refund و Expense تەنها بۆ خاوەن/بەڕێوەبەر و بە دوو Flag ـی جیا، بە بنەڕەت ناچالاکن. **Void ـی پسوولەی تەواوبوو، Partial Refund و Cloud Sync ـی گەڕاندنەوە جێبەجێ نەکراون**. Reconciliation و copy-only recovery هەمان ژورنالە نوێیەکان دەپشکنن. [وردەکاری](CASH.md).
+
 ## قۆناغی داهاتوو
 
 ١. دەسەڵاتی وردتر بۆ کردارە داهاتووەکان و ڕێگای گەڕاندنەوەی دەستگەیشتن لە لەبیرچوونی وشەی نهێنی.
