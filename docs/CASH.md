@@ -45,6 +45,12 @@
 - `reconcile` cash adjustments و refund stock ledger و cache دەپشکنێت. باکئەپ/کۆپیی recovery هەمان خشتەکان دەخوێنێتەوە. Retry ـی هەمان request_id **پارە دووبارە ناکەمێنێت**.
 - **گرنگ:** گەڕاندنەوەکانی 0.30 هێشتا بە Supabase sync ناکرێن. بۆیە API ـی Refund/Expense کاتێک Cloud Sync چالاک بێت قوفڵە و ئەگەر مێژووی Refund/Expense ـی تاقیکردنەوە هەبێت، دەستپێکردنی Cloud Sync ـی نوێ ڕەت دەکرێتەوە. ڕووکاری بەکارهێنەری تەواوی Refund/Expense نییە و پارەی ڕاستەقینە تاقی نەکراوە. تا Cloud reconciliation و QA ـی هاردوێر تەواو نەبن، Production قوفڵە.
 
+## قۆناغی 0.31 — تەنها گەڕاندنەوەی کۆگا بۆ Cloud (نەک پارە)
+
+Refund ـی تەواو ئێستا لە هەمان SQLite transaction دا تۆمارێکی **stock.refund_created** بە زانیاریی کاڵا تەنها دەخاتە Outbox. **Cash Ledger، بڕی پارە، Expense، ناسنامەی کارمەند، هۆکار و مێژووی شەفت نانێردرێن بۆ Supabase**. ڕێکخستنی Cloud ـی ڕاستەقینە هێشتا ئەم protocol ـەی تێدا نییە؛ بۆیە Sync کاتێک مێژووی Adjustment هەبێت قوفڵ دەمێنێتەوە و هیچ network request نانێردرێت. 
+
+پشکنینی read-only بە `node scripts/refund-sync-readiness.mjs --db PATH_TO_QA_SQLITE` هیچ داتایەک نانووسێت و تەنها ژمارەکان ڕاپۆرت دەکات. `contract_ready:true` **مانای ئامادەیی ناردنی Cloud نییە**. تاقیکردنەوەی SQL و پەسەندکردنی migration پێویستە. [پلانی تەواو](CLOUD_REFUND_QA.md).
+
 ## سنووری گرنگ
 
 - ئەم قۆناغە **نەقدی هاتوو/چوو** بۆ فرۆشتن و کڕینی نوێی دوای چالاککردن هەژمار دەکات. فرۆشتن و کڕینی پێشوو بە خۆکار ناگەڕێندرێنەوە ناو Cash Ledger.
