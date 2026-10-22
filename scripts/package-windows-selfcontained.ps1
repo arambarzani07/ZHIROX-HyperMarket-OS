@@ -71,7 +71,7 @@ try {
   }
   $manifest | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath (Join-Path $runtime 'node-manifest.json') -Encoding utf8
   $pkg = Get-Content -LiteralPath (Join-Path $app 'package.json') -Raw | ConvertFrom-Json
-  if ($pkg.version -notmatch '^0\.31\.0-dev\.\d+$') { throw 'Unexpected QA package version.' }
+  if ($pkg.version -notmatch '^0\.32\.0-dev\.\d+$') { throw 'Unexpected QA package version.' }
   $name = "ZHIROX-Windows-SelfContained-QA-$($pkg.version)-x64.zip"
   $destination = Join-Path $outputFull $name
   Compress-Archive -LiteralPath $app -DestinationPath $destination -CompressionLevel Optimal -Force
