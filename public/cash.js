@@ -13,7 +13,7 @@
   if(!Number.isSafeInteger(result))throw Error('بڕی پارە لە سنوور دەرچوو');
   return result;
  }
- function clear(){generation++;busy=false;pending=null;shifts=[];events=[];recentlyClosed=[];enabled=false;}
+ function clear(){generation++;busy=false;pending=null;shifts=[];events=[];recentlyClosed=[];enabled=false;window.zhiroxAdjustments?.leave?.();}
  function paint(){
   const view=q('#cash-data');if(!view)return;
   const manage=window.zhiroxAuth.can('cash.manage');
@@ -43,8 +43,8 @@
  }
  function render(){
   clear();q('#hs-actions').replaceChildren();q('#hs-save').hidden=true;
-  q('#hs-view').innerHTML='<div id="cash-data">بارکردنی داتای سندوق…</div><div id="cash-confirm" hidden></div><p id="cash-status" role="status"></p>';
-  void load();
+  q('#hs-view').innerHTML='<div id="cash-data">بارکردنی داتای سندوق…</div><div id="cash-confirm" hidden></div><p id="cash-status" role="status"></p><div id="cash-adjustment-root" aria-label="ڕێکخستنی Refund و خەرجیی سندوق"></div>';
+  void load().then(()=>window.zhiroxAdjustments?.refresh?.());
  }
  async function open(form){
   if(busy||!enabled)return;
@@ -82,5 +82,5 @@
   if(b.dataset.cashClose&&!busy){const s=shifts.find(x=>x.id===b.dataset.cashClose);if(s){pending={kind:'close',id:s.id,value:String(s.balance/(s.currency==='USD'?100:1))};paint();}}
   if(b.id==='cash-cancel-close'&&!busy){pending=null;q('#cash-confirm').hidden=true;}
  });
- window.zhiroxCash={render,clear,open(){q('#cash-open-form')?.querySelector('input')?.focus();}};
+ window.zhiroxCash={render,clear,reload:load,open(){q('#cash-open-form')?.querySelector('input')?.focus();}};
 })();
