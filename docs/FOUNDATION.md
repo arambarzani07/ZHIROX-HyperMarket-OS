@@ -91,6 +91,10 @@ Cash Adjustment ـەکان بە خشتەی نەگۆڕدراو و Cash Shift ـی
 
 بەبێ ناردنی هیچ پارەیەک، Refund ـی تەواو لە transaction دا Outbox ـێکی `stock.refund_created` بۆ گەڕاندنەوەی کۆگا ئامادە دەکات. Expense و Cash Ledger ناوخۆیین؛ remote ingestion ـی ئەم جۆرە Event ـە هێشتا پەسەند نەکراوە. Sync بە fail-closed وستاوە تا SQL migration، verification ـی RLS، idempotency، و stock parity لە Staging پشتڕاست دەبنەوە. [وردەکاری](CLOUD_REFUND_QA.md).
 
+## قۆناغی 0.32 — PostgreSQL Refund Stock Protocol، تەنها QA
+
+SQL ـی پێشنیارکراو بۆ **Staging** لە `supabase/refund-stock-sync-staging.sql` جیاواز لە Live Edge Function ـە؛ دوو خشتەی RLS/immutable و endpoint ـێکی جیا بۆ گەڕاندنەوەی کۆگا زیاد دەکات. GitHub Actions بە PostgreSQL 17 ـی موقەتی، داتای ساختە و `ROLLBACK` پشکنینی tenant، device، full-refund و idempotency دەکات. هیچ SQL ـێکی داتابەیسی ڕاستەقینە نەگۆڕاوە و Sync ـی ناوخۆ قوفڵ ماوە. [ڕێنمایی](REFUND_POSTGRES_QA.md).
+
 ## قۆناغی داهاتوو
 
 ١. دەسەڵاتی وردتر بۆ کردارە داهاتووەکان و ڕێگای گەڕاندنەوەی دەستگەیشتن لە لەبیرچوونی وشەی نهێنی.
