@@ -2,6 +2,7 @@ import {openSuppliers} from './suppliers.mjs';
 import {openPurchasePreview} from './purchase-preview.mjs';
 import {openPurchases} from './purchases.mjs';
 import {openCash} from './cash.mjs';
+import {reconcile} from './reconcile.mjs';
 import {openPosCatalog} from './pos-catalog.mjs';
 import {catalogPage} from './catalog.mjs';
 import {openProductImport} from './product-import.mjs';
@@ -28,7 +29,16 @@ const dataDir=resolveDataDirectory();await mkdir(dataDir,{recursive:true});const
 const suppliers=openSuppliers(store);
 const cash=openCash(store);
 const cashAccountingEnabled=process.env.ZHIROX_CASH_ACCOUNTING==='enabled';
-if(!cashAccountingEnabled&&cash.hasOpen())throw new Error('Cash accounting was disabled while a cash shift is still open; re-enable cash accounting to continue safely');
+// Cash mode is sticky once a real shift exists, even when ALL drawers were closed.
+ // Otherwise disabling the environment flag would silently create untracked cash sales.
+ const hasCashHistory=cash.hasHistory();
+ if(!cashAccountingEnabled&&hasCashHistory)throw new Error('Cash ledger protection: historical cash shifts exist (open or closed). ZHIROX_CASH_ACCOUNTING must remain enabled; refusing unsafe startup');
+ // Reconcile all persisted stock/cash receipts BEFORE accepting new transactions.
+ // Never auto-repair a ledger discrepancy; require a reviewed backup recovery.
+ if(cashAccountingEnabled&&hasCashHistory){
+  const integrity=reconcile(store.db);
+  if(!integrity.ok)throw new Error('Cash ledger protection: persisted ledger or stock reconciliation failed; startup blocked until reviewed backup recovery');
+ }
 if(cashAccountingEnabled)store.attachSaleCashHook((actor,receipt)=>cash.recordSale(actor,receipt));
 const purchases=openPurchases(store,{cash:cashAccountingEnabled?cash:null});
 const purchasePostingEnabled=cashAccountingEnabled&&process.env.ZHIROX_PURCHASE_POSTING==='enabled';
