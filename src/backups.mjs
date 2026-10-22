@@ -19,7 +19,7 @@ export function openBackups(directory){
    try{
     // Verify a private copy: no operational DB locks and no retention race while SQLite is open.
     const source=await file(name);try{await mkdir(dir,{recursive:true});temp=await mkdtemp(join(dir,'verify-'));const target=await open(join(temp,'check.sqlite'),'wx',0o600);await pipeline(source.handle.createReadStream(),target.createWriteStream());}finally{await source.handle.close();}
-    const result=await verifySQLite(join(temp,'check.sqlite'));
+    const result=await verifySQLite(join(temp,'check.sqlite'),{reconcile:true});
     return{name,...result,checked_at:new Date().toISOString()};
    }finally{try{if(temp)await rm(temp,{recursive:true,force:true});}finally{verifying=false;}}
   }
