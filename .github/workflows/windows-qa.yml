@@ -64,7 +64,7 @@ jobs:
           try {
             & $node scripts/windows-preflight.mjs --strict
             if ($LASTEXITCODE -ne 0) { throw 'Bundled Node preflight failed' }
-            & $node --test test/windows-preflight.test.mjs test/cash-recovery.test.mjs test/purchase-intent-restart-http.test.mjs
+            & $node --test test/windows-preflight.test.mjs test/cash-recovery.test.mjs test/purchase-intent-restart-http.test.mjs test/windows-portable-start.test.mjs
             if ($LASTEXITCODE -ne 0) { throw 'Bundled Node recovery smoke tests failed' }
           } finally { Pop-Location }
 
