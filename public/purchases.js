@@ -103,7 +103,7 @@
    if(!current(g))return;
    const doc=answer.purchase;postAttempt=null;previewPayload=null;items=[];rows();
    q('#purchase-post-panel').hidden=true;
-   q('#purchase-result').innerHTML='<section class="panel"><h2>پسوولەی کڕین تۆمار کرا</h2><p>ژمارەی کڕین: <strong>'+esc(doc.purchase_no)+'</strong></p><p>دابینکەر: '+esc(doc.supplier_name)+'</p><p>کۆی کڕین: <strong>'+money(doc.total,doc.currency)+' '+esc(doc.currency)+'</strong></p><p class="sub">کڕین و جووڵەی کۆگا لە SQLite تۆمار کراون. هێشتا تۆماری پارەدان لە سندوقی سەربەخۆ نییە؛ پشکنینی Cash Ledger لە قۆناغی داهاتوودا پێویستە.</p></section>';
+   q('#purchase-result').innerHTML='<section class="panel"><h2>پسوولەی کڕین تۆمار کرا</h2><p>ژمارەی کڕین: <strong>'+esc(doc.purchase_no)+'</strong></p><p>دابینکەر: '+esc(doc.supplier_name)+'</p><p>کۆی کڕین: <strong>'+money(doc.total,doc.currency)+' '+esc(doc.currency)+'</strong></p><p class="sub">پسوولەی کڕین، زیادبوونی کۆگا و کەمبوونەوەی پارەی سندوق هەموویان لە یەک transaction ـی SQLite تۆمار کراون. هەمان داواکاری دووبارە پارە کەم ناکاتەوە.</p></section>';
    status(answer.replayed?'داواکاری پێشتر تۆمار کرابوو؛ پسوولەی هەمان کڕین گەڕێندرایەوە.':'تۆمارکردنی کڕین سەرکەوتوو بوو.');
   }catch(e){
    if(!current(g))return;
