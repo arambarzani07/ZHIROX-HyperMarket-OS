@@ -7,10 +7,19 @@ test('purchase intent survives browser/server restart and a lost posting respons
  const env={...process.env,PORT:String(port),ZHIROX_DATA_DIR:dir,ZHIROX_CASH_ACCOUNTING:'enabled',ZHIROX_PURCHASE_POSTING:'enabled'};
  const boot=async()=>{
   child=spawn(process.execPath,['src/server.mjs'],{env,stdio:['ignore','pipe','pipe']});
+  let stderr='';
+  child.stderr.on('data',data=>{stderr+=String(data).slice(-4000);});
   await new Promise((resolve,reject)=>{
-   const timer=setTimeout(()=>reject(Error('server did not boot')),12000);
-   child.stdout.once('data',()=>{clearTimeout(timer);resolve()});
-   child.once('error',e=>{clearTimeout(timer);reject(e)});
+   // Windows CI can be busy with Node and archive smoke tests; diagnose early exits.
+   const timer=setTimeout(()=>reject(Error('server did not boot within 30s; exit='+child.exitCode+'; stderr='+stderr)),30000);
+   let settled=false;
+   const settle=(error)=>{
+    if(settled)return;settled=true;clearTimeout(timer);
+    if(error)reject(error);else resolve();
+   };
+   child.stdout.once('data',()=>settle());
+   child.once('error',e=>settle(e));
+   child.once('exit',(code,signal)=>settle(Error('server exited before startup: code='+code+' signal='+signal+' stderr='+stderr)));
   });
  };
  const stop=async()=>{if(child&&child.exitCode===null){child.kill('SIGTERM');await once(child,'exit');}};
