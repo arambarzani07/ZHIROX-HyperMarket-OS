@@ -1,4 +1,4 @@
-# پاکێجی تاقیکردنەوەی Windows — 0.25.0-dev.0
+# پاکێجی تاقیکردنەوەی Windows — 0.26.0-dev.0
 
 **دۆخ:** دوو جۆری Portable QA ZIP هەیە، نەک EXE، installer یان Windows Service. یەکێکیان Node.js ـی جیا داوا دەکات، ئەوی تریان Node.js ـی فەرمیی پشتڕاستکراوی لەخۆ گرتووە. ئەم پاکێجە بۆ ژینگەی جیا و تاقیکردنەوەی بەڕێوەبەر ئامادە کراوە؛ بەکارهێنانی ڕاستەقینەی مارکێت و گۆڕینی سیستەمی کۆن پەسەند نەکراوە.
 
@@ -29,13 +29,13 @@
 
 ## وەرگرتنی پاکێجی Windows QA لە GitHub Actions
 
-لە [GitHub Actions](https://github.com/arambarzani07/ZHIROX-HyperMarket-OS/actions) کاری **ZHIROX Windows QA (no hardware)** بە سەرکەوتوویی تەواوبوو هەڵبژێرە؛ لە `Artifacts` پاکێجی `zhirox-windows-qa-unsigned-portable` هەیە. دوو ZIP لەناویدان: `ZHIROX-Windows-Portable-0.25.0-dev.0.zip` (پێویستی بە Node ـی دامەزراو هەیە) و **`ZHIROX-Windows-SelfContained-QA-0.25.0-dev.0-x64.zip`** (Node 24 ـی فەرمی لەناویدایە). هەر یەک فایلێکی `.sha256` ـی تایبەتی هەیە. ئەم artifact ـە ماوەی سنوورداری هەیە (٧ ڕۆژ)، و بەڵگەنامەی signature ـی publisher نییە.
+لە [GitHub Actions](https://github.com/arambarzani07/ZHIROX-HyperMarket-OS/actions) کاری **ZHIROX Windows QA (no hardware)** بە سەرکەوتوویی تەواوبوو هەڵبژێرە؛ لە `Artifacts` پاکێجی `zhirox-windows-qa-unsigned-portable` هەیە. دوو ZIP لەناویدان: `ZHIROX-Windows-Portable-0.26.0-dev.0.zip` (پێویستی بە Node ـی دامەزراو هەیە) و **`ZHIROX-Windows-SelfContained-QA-0.26.0-dev.0-x64.zip`** (Node 24 ـی فەرمی لەناویدایە). هەر یەک فایلێکی `.sha256` ـی تایبەتی هەیە. ئەم artifact ـە ماوەی سنوورداری هەیە (٧ ڕۆژ)، و بەڵگەنامەی signature ـی publisher نییە.
 
 بۆ پشکنینی checksum لە PowerShell، لە فۆڵدەری ZIP:
 
 ```powershell
-Get-FileHash .\ZHIROX-Windows-SelfContained-QA-0.25.0-dev.0-x64.zip -Algorithm SHA256
-Get-Content .\ZHIROX-Windows-SelfContained-QA-0.25.0-dev.0-x64.zip.sha256
+Get-FileHash .\ZHIROX-Windows-SelfContained-QA-0.26.0-dev.0-x64.zip -Algorithm SHA256
+Get-Content .\ZHIROX-Windows-SelfContained-QA-0.26.0-dev.0-x64.zip.sha256
 ```
 
 بەهاکان دەبێت یەکسان بن؛ ئەگەر جیاوازن پاکێجەکە مەکەرەوە.
@@ -47,6 +47,10 @@ Get-Content .\ZHIROX-Windows-SelfContained-QA-0.25.0-dev.0-x64.zip.sha256
 - داتای SQLite، نهێنی، فایلی device token و باکئەپ ناخرێنە ناو پاکێج.
 - هەردوو ZIP لە Windows CI دەردەهێنرێن؛ checksum، LICENSE، وەشانی Node، preflight و تاقیکردنەوەی HTTP ـی سندوق و داواکاریی کڕینی پارێزراو بە خۆی `runtime/node.exe` لە ژینگەی کاتی دەپشکنرێن.
 - `.gitattributes` پاراستنی byte-exact بۆ `design/approved-card-home.html` لە Windows Git checkout دەسەپێنێت؛ دیزاینی پەسەندکراو ناگۆڕدرێت.
+
+## پشکنینی هاردوێر بە شێوەی بێ نووسین
+
+ئێستا `scripts/windows-device-inspect.ps1` ناوی پرینتەرە دابنراوەکان و ئامێرەکانی USB/HID تەنها دەخوێنێتەوە؛ `scripts/scanner-readonly.mjs` دەتوانێت بارکۆدی سکانی Enter ـدار پشکنێت و بۆ 27-prefix، کۆدی ٧ ژمارەیی و check digit دەستنیشان بکات. ئەم قۆناغە **هیچ فەرمانی چاپکردن، Drawer Pulse یان فرۆشتنی کێش نەدات**. [وردەکاری](HARDWARE_QA.md).
 
 ## سنووری ڕاستەقینە
 
