@@ -1,6 +1,6 @@
 {
   "name": "zhirox-hypermarket-os",
-  "version": "0.28.0-dev.0",
+  "version": "0.29.0-dev.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -17,7 +17,7 @@
     "hardware:scanner": "node scripts/scanner-readonly.mjs",
     "qa:receipt:windows": "node scripts/receipt-visual-qa.mjs dist/receipt-visual-qa",
     "package:windows": "node scripts/package-windows.mjs",
-    "package:windows:selfcontained": "pwsh -NoProfile -File scripts/package-windows-selfcontained.ps1 -SourceZip dist/ZHIROX-Windows-Portable-0.28.0-dev.0.zip -OutputDir dist",
+    "package:windows:selfcontained": "pwsh -NoProfile -File scripts/package-windows-selfcontained.ps1 -SourceZip dist/ZHIROX-Windows-Portable-0.29.0-dev.0.zip -OutputDir dist",
     "recovery:prepare": "node scripts/prepare-recovery.mjs"
   }
 }
