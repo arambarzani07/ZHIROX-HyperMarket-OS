@@ -1,0 +1,64 @@
+name: ZHIROX Windows QA (no hardware)
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-qa:
+    name: Windows Node 24 / SQLite / portable ZIP
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+
+      - name: Install isolated Node.js 24 runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify Sorani UI design and module syntax
+        run: npm run check
+
+      - name: Run Windows-only and restore smoke tests
+        run: node --test test/windows-preflight.test.mjs test/cash-recovery.test.mjs test/purchase-intent-restart-http.test.mjs
+
+      - name: Verify read-only preflight on actual Windows runner
+        run: npm run windows:preflight
+
+      - name: Package committed portable source with local-only launcher
+        run: npm run package:windows
+
+      - name: Verify SHA-256, ZIP contents and launch preflight from extracted package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $zip = Get-ChildItem -Path 'dist\ZHIROX-Windows-Portable-*.zip' | Select-Object -First 1
+          if ($null -eq $zip) { throw 'Portable ZIP was not generated' }
+          $checksum = (Get-Content -Path "$($zip.FullName).sha256" -Raw).Split(' ')[0].Trim().ToLowerInvariant()
+          $actual = (Get-FileHash -Path $zip.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($checksum -ne $actual) { throw 'Portable ZIP SHA-256 mismatch' }
+          $unpack = Join-Path $env:RUNNER_TEMP 'zhirox-windows-smoke'
+          Expand-Archive -LiteralPath $zip.FullName -DestinationPath $unpack -Force
+          $source = Join-Path $unpack 'ZHIROX-HyperMarket-OS'
+          foreach ($f in @('Start-ZHIROX.cmd', 'scripts\windows-preflight.mjs', 'src\server.mjs')) {
+            if (!(Test-Path -LiteralPath (Join-Path $source $f))) { throw "Missing packaged file: $f" }
+          }
+          Push-Location $source
+          try { node scripts\windows-preflight.mjs --json --strict; if ($LASTEXITCODE -ne 0) { throw 'Packaged preflight failed' } }
+          finally { Pop-Location }
+
+      - name: Store QA-only portable ZIP and checksum for manual testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: zhirox-windows-qa-unsigned-portable
+          path: |
+            dist/*.zip
+            dist/*.sha256
+          retention-days: 7
+          if-no-files-found: error
