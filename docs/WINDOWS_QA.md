@@ -1,9 +1,17 @@
-# Windows Acceptance Checklist — ZHIROX HyperMarket OS 0.23.0
+# Windows Acceptance Checklist — ZHIROX HyperMarket OS 0.24.0-dev.0
 
 **Status:** NOT RUN on the supermarket's actual Windows PC. This is a QA protocol, not evidence of passing hardware tests. Existing Admin.exe, Cashier.exe, SQL Server and attached printers remain **100% read-only**; run tests only in an isolated ZHIROX data directory with dedicated test devices or user-authorized hardware.
 
+## Windows CI: proven only on temporary runner
+
+- GitHub Actions Windows Node 24 checks the approved design checksum, source syntax, read-only preflight, ZIP SHA-256, packaged files and test-data cash/purchase HTTP flows.
+- An unsigned portable ZIP and its matching SHA-256 are produced as an ephemeral 7-day GitHub Actions artifact, not an installer or a production release.
+- GitHub CI success does **not** check a supermarket POS device or authorize deployment.
+
 ## 1 — Environment / rollback
 - [ ] Confirm Windows version/architecture, Node.js **24+**, clock/timezone Asia/Baghdad, available disk space and a writable isolated test folder.
+- [ ] First run read-only `node scripts/windows-preflight.mjs --json --strict`, review all blocking issues and warnings; this does NOT modify ZHIROX or legacy data.
+- [ ] Use `Start-ZHIROX.cmd` **only in a separate QA data directory**; it forces localhost and both cash posting gates OFF. Never point `ZHIROX_DATA_DIR` at the old POS or real-market database.
 - [ ] Do not alter, restart, migrate, write to or modify configurations of the existing Windows POS or production SQL Server.
 - [ ] Save a SHA-256 copy of a **test** backup; verify via built-in backup verification before starting.
 - [ ] Start with `ZHIROX_CASH_ACCOUNTING` and `ZHIROX_PURCHASE_POSTING` **unset** on real-market data; use `enabled` only within an isolated test folder.
