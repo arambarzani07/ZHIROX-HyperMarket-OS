@@ -16,6 +16,12 @@
  }
  function paint(){
   if(!current()||!q('#customer-list'))return;
+  const noticePanel=q('#customer-notice');
+  if(noticePanel){
+   const next=noticePanel.nextElementSibling;
+   if(pending&&next?.id!=='customer-retry')noticePanel.insertAdjacentHTML('afterend','<button class="btn" id="customer-retry" type="button">دووبارە پشکنینی هەمان داواکاری</button>');
+   if(!pending&&next?.id==='customer-retry')next.remove();
+  }
   const holder=q('#customer-list');
   const table=rows.length?rows.map(c=>'<tr>'+
    '<td>'+esc(c.code)+'</td><td>'+esc(c.name)+'</td><td>'+esc(c.currency)+'</td>'+
@@ -45,7 +51,7 @@
    }
   }
   q('#hs-view').querySelectorAll('input,select,button').forEach(x=>x.disabled=busy);
-  if(q('#customer-retry'))q('#customer-retry').hidden=!pending;
+  if(q('#customer-retry'))q('#customer-retry').disabled=busy;
  }
  async function load(more=false){
   if(!readable()||!current()||busy)return;
