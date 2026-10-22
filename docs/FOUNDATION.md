@@ -59,6 +59,10 @@ Node.js 24+، هیچ dependency ـی runtime پێویست نییە. SQLite لە 
 
 داواکاریی کڕینی نەقد بە purchase_intents لە SQLite پێش Cash/Stock commit هەڵدەگیرێت؛ لە دوای داخرانەوەی browser/server بە request_id دەتوانرێت دۆخەکە ببینرێت و بێ double-post بەردەوام بکرێت. باکئەپی سندوق و داواکارییە ناتەواوەکان لە کۆپێی جیا بە restore پشکنراون. [وردەکاری](DURABLE_PURCHASES.md).
 
+## قۆناغی Windows QA (0.24.0-dev.0 — Branch، نەک Production)
+
+پشکنینی بێ نووسین `scripts/windows-preflight.mjs`، لانچەری محلی `Start-ZHIROX.cmd`، پاراستنی بایتەکانی دیزاینی قوفڵکراو لە Windows و GitHub Actions ـی `windows-latest` زیاد کراون. ZIP ـی QA بە `package:windows` و SHA-256 ـی یەکسان درووست دەکرێت؛ نە EXE، نە installer. هاردوێری ڕاستەقینەی مارکێت هێشتا تاقی نەکراوەتەوە. [وردەکاری](WINDOWS.md) و [لیستی QA](WINDOWS_QA.md).
+
 ## قۆناغی داهاتوو
 
 ١. دەسەڵاتی وردتر بۆ کردارە داهاتووەکان و ڕێگای گەڕاندنەوەی دەستگەیشتن لە لەبیرچوونی وشەی نهێنی.
