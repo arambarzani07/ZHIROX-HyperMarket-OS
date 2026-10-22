@@ -63,6 +63,10 @@ Node.js 24+، هیچ dependency ـی runtime پێویست نییە. SQLite لە 
 
 پشکنینی بێ نووسین `scripts/windows-preflight.mjs`، لانچەری محلی `Start-ZHIROX.cmd`، پاراستنی بایتەکانی دیزاینی قوفڵکراو لە Windows و GitHub Actions ـی `windows-latest` زیاد کراون. ZIP ـی QA بە `package:windows` و SHA-256 ـی یەکسان درووست دەکرێت؛ نە EXE، نە installer. هاردوێری ڕاستەقینەی مارکێت هێشتا تاقی نەکراوەتەوە. [وردەکاری](WINDOWS.md) و [لیستی QA](WINDOWS_QA.md).
 
+## پاکێجی Windows Self-contained QA (0.25.0-dev.0 — Branch، نەک Production)
+
+پاکێجی ZIP ـی Windows x64 بە Node.js 24 ـی فەرمی و LICENSE ـی ناوخۆ زیاد کرا، لە GitHub Actions بە SHA-256 ـی سەرچاوە پشتڕاست دەکرێتەوە. لانچەری `Start-ZHIROX.cmd` خۆکارانە Node ـی تێخراو هەڵدەبژێرێت و داتا دەخاتە `%LOCALAPPDATA%\\ZHIROX-HyperMarket-OS\\qa-portable`، Cash Accounting و Purchase Posting بە بنەڕەت قوفڵن. ئەمە ZIP ـی تاقیکردنەوەیە؛ نە installer یان EXE ـی کۆتایی. [وردەکاری](WINDOWS.md).
+
 ## قۆناغی داهاتوو
 
 ١. دەسەڵاتی وردتر بۆ کردارە داهاتووەکان و ڕێگای گەڕاندنەوەی دەستگەیشتن لە لەبیرچوونی وشەی نهێنی.
