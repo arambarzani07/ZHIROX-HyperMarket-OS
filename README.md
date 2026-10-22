@@ -49,7 +49,7 @@ Production branch: `main`
 
 - [هاوکاتکردنی Supabase — 0.3.0](docs/SYNC.md)
 
-- [پاکێجی Windows QA ـی خۆبەخۆ بە Node 24 ـی تێخراو — 0.34.0-dev.0](docs/WINDOWS.md)
+- [پاکێجی Windows QA ـی خۆبەخۆ بە Node 24 ـی تێخراو — 0.35.0-dev.0](docs/WINDOWS.md)
 
 - [سەبەتەی پارێزراو و فرۆشتنی بێ دووبارە — 0.4.0](docs/CHECKOUT.md)
 
@@ -84,3 +84,4 @@ Production branch: `main`
 - [Capability Handshake، پەڕەبەندی کۆگا و پشکنینی parity ـی ناوخۆ، بێ Sync ـی ڕاستەقینە — 0.33.0-dev.0](docs/CAPABILITY_PARITY_QA.md)
 - [Edge Function ـی QA تەنها بۆ Staging، پشکنینی ئامێر و بەراوردی کۆگا — 0.34.0-dev.0](docs/EDGE_CAPABILITY_QA.md)
 - [لیستی کۆتایی مەرجەکانی Production — هاردوێر، Staging، باکئەپ، دەسەڵات و پەسەندی خاوەن](docs/RELEASE_ACCEPTANCE.md)
+- [پشکنەری 0.35 ـی Staging ـی تەنها خوێندنەوە، دوو پشکنینی کۆگا و پاراستنی SQLite](docs/STAGING_PROBE_QA.md)
