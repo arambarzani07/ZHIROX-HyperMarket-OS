@@ -94,6 +94,7 @@ const server=createServer(async(req,res)=>{res.setHeader('X-Content-Type-Options
  if(url.pathname==='/api/cash/expenses'&&req.method==='POST'){
   auth.requirePermission(session,'cash.manage');
   if(!adjustmentPostingEnabled)throw new DomainError('خەرجیی سندوق تەنها لە قۆناغی QA و بە مۆڵەتی تایبەت چالاک دەکرێت',409);
+  if(sync.status().configured)throw new DomainError('Cloud Sync چالاکە؛ Refund و Expense بێ پشتیوانیی هاوکاتکردنی پارە قوفڵن',409);
   const input=await body(req),fresh=auth.session(token);
   auth.requirePermission(fresh,'cash.manage');
   if(req.headers['x-zhirox-csrf']!==fresh.csrf)throw new DomainError('دانیشتن گۆڕاوە',403);
@@ -103,6 +104,7 @@ const server=createServer(async(req,res)=>{res.setHeader('X-Content-Type-Options
  if(refundMatch&&req.method==='POST'){
   auth.requirePermission(session,'cash.manage');
   if(!adjustmentPostingEnabled)throw new DomainError('Refund تەنها لە قۆناغی QA و بە مۆڵەتی تایبەت چالاک دەکرێت',409);
+  if(sync.status().configured)throw new DomainError('Cloud Sync چالاکە؛ Refund و Expense بێ پشتیوانیی هاوکاتکردنی پارە قوفڵن',409);
   const input=await body(req),fresh=auth.session(token);
   auth.requirePermission(fresh,'cash.manage');
   if(req.headers['x-zhirox-csrf']!==fresh.csrf)throw new DomainError('دانیشتن گۆڕاوە',403);
