@@ -139,7 +139,7 @@ export function openPurchases(store,{cash=null}={}){
   }catch(e){db.exec('ROLLBACK');throw e;}
  }
  function listIntents(session){
-  const actor=permit(session,'purchases.create');
+  permit(session,'purchases.create');const actor=session.user.id;
   // Include every pending intent (bounded per actor), plus ten completed intents
   // so a lost response after a successful post can be distinguished from failure.
   const pending=db.prepare(`SELECT i.request_id,i.supplier_id,i.currency,i.total,i.created_at,NULL purchase_id,i.request_payload
