@@ -4,7 +4,7 @@ const max=BigInt(Number.MAX_SAFE_INTEGER);
 const whole=(n,min=0n)=>typeof n==='bigint'&&n>=min&&n<=max;
 const rows=(db,sql)=>{const q=db.prepare(sql);q.setReadBigInts(true);return q.iterate();};
 export function reconcile(db){
- const failures={stock:0,receipts:0,sale_items:0,sale_movements:0,opening_movements:0,purchase_documents:0,purchase_items:0,purchase_movements:0,cash_shifts:0,cash_movements:0};
+ const failures={stock:0,receipts:0,sale_items:0,sale_movements:0,opening_movements:0,purchase_documents:0,purchase_items:0,purchase_movements:0,cash_shifts:0,cash_movements:0,cash_adjustments:0,refund_movements:0};
  const products=new Map(),sales=new Map(),demand=new Map(),movements=new Map(),openings=new Set();
  let itemCount=0,movementCount=0;
  for(const p of rows(db,'SELECT id,currency,stock_milli FROM products'))products.set(p.id,{...p,balance:0n});
@@ -86,6 +86,46 @@ export function reconcile(db){
     if(!ref||ref.currency!==event.currency||!Number.isSafeInteger(ref.total)||BigInt(ref.total)!==-event.amount)failures.cash_movements++;
    }else failures.cash_movements++;
   }
+
+  // v0.30 additive journals: original cash_ledger and stock_ledger stay immutable.
+  // Aggregate adjustments and stock reversals before verifying cached balances.
+  if(db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='cash_adjustments'").get()){
+   const changes=new Map(),expected=new Map(),actual=new Map(),seenSales=new Set();
+   for(const a of rows(db,'SELECT id,shift_id,currency,kind,sale_id,amount FROM cash_adjustments')){
+    const shift=shifts.get(a.shift_id);
+    if(!shift||shift.currency!==a.currency||typeof a.amount!=='bigint'||a.amount>=0n||a.amount< -max){failures.cash_adjustments++;continue;}
+    shift.ledger+=a.amount;
+    changes.set(a.id,a);
+    if(a.kind==='refund'){
+     const sale=sales.get(a.sale_id);
+     const original=db.prepare("SELECT 1 FROM cash_ledger WHERE kind='sale' AND reference_id=?").get(a.sale_id);
+     if(!sale||sale.currency!==a.currency||sale.total!==-a.amount||!original||seenSales.has(a.sale_id))failures.cash_adjustments++;
+     seenSales.add(a.sale_id);
+    }else if(a.kind!=='expense'||a.sale_id!==null)failures.cash_adjustments++;
+   }
+   for(const x of rows(db,"SELECT a.id adjustment_id,i.product_id,i.base_milli FROM cash_adjustments a JOIN sale_items i ON a.sale_id=i.sale_id WHERE a.kind='refund'")){
+    if(!expected.has(x.adjustment_id))expected.set(x.adjustment_id,new Map());
+    const map=expected.get(x.adjustment_id);
+    map.set(x.product_id,(map.get(x.product_id)||0n)+x.base_milli);
+   }
+   if(db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='refund_stock_ledger'").get()){
+    for(const x of rows(db,'SELECT adjustment_id,product_id,delta_milli FROM refund_stock_ledger')){
+     const change=changes.get(x.adjustment_id),product=products.get(x.product_id);
+     const valid=whole(x.delta_milli,1n);
+     if(!change||change.kind!=='refund'||!product||!valid){failures.refund_movements++;continue;}
+     product.balance+=x.delta_milli;
+     if(!actual.has(x.adjustment_id))actual.set(x.adjustment_id,new Map());
+     const map=actual.get(x.adjustment_id);
+     map.set(x.product_id,(map.get(x.product_id)||0n)+x.delta_milli);
+    }
+   }else if([...changes.values()].some(a=>a.kind==='refund'))failures.refund_movements++;
+   for(const a of changes.values())if(a.kind==='refund'){
+    const want=expected.get(a.id)||new Map(),got=actual.get(a.id)||new Map();
+    if(!want.size)failures.refund_movements++;
+    for(const product of new Set([...want.keys(),...got.keys()]))if(want.get(product)!==got.get(product))failures.refund_movements++;
+   }
+  }
+
   for(const s of shifts.values())if(s.ledger!==s.balance||!whole(s.ledger)||opening.get(s.id)!==1)failures.cash_shifts++;
  }
  for(const p of products.values())if(!['IQD','USD'].includes(p.currency)||!whole(p.stock_milli)||p.balance!==p.stock_milli)failures.stock++;
