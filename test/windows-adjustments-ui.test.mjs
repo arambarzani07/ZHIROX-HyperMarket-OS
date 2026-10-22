@@ -9,7 +9,7 @@ function fixture({posting=false,manager=true,ambiguousOnce=false}={}){
  const listeners=new Map(),root={addEventListener:(name,cb)=>listeners.set(name,cb)};
  const panel={innerHTML:''};
  const requests=[],confirmations=[],errors=[];
- let attempts=0,savedExpense=null,calls=0;
+ let attempts=0,savedExpense=null,savedRefund=null,calls=0;
  const window={
   zhiroxCurrentPage:'cash',
   zhiroxAuth:{can:key=>manager&&key==='cash.manage'},
@@ -17,9 +17,16 @@ function fixture({posting=false,manager=true,ambiguousOnce=false}={}){
   confirm(message){confirmations.push(message);return true;},
   async zhiroxRequest(path,opts={}){
    requests.push({path,opts});
-   if(path==='/api/cash/adjustments')return{posting_enabled:posting,adjustments:savedExpense?[savedExpense]:[]};
+   if(path==='/api/cash/adjustments')return{posting_enabled:posting,adjustments:[savedExpense,savedRefund].filter(Boolean)};
    if(path==='/api/cash')return{enabled:true,shifts:[{id:uuid,currency:'IQD',balance:10000}],events:[]};
    if(path==='/api/receipts')return{receipts:[{id:uuid,receipt_no:1,currency:'IQD',total:3000}]};
+   if(path==='/api/cash/refunds/'+uuid){
+    const body=JSON.parse(opts.body);
+    if(Object.hasOwn(body,'amount'))throw Error('Refund must never accept manual amount');
+    if(savedRefund)return {replayed:true,adjustment:savedRefund};
+    savedRefund={kind:'refund',sale_id:uuid,currency:'IQD',amount:-3000,reason:body.reason};
+    return{replayed:false,adjustment:savedRefund};
+   }
    if(path==='/api/cash/expenses'){
     attempts++;
     const body=JSON.parse(opts.body);
@@ -40,13 +47,13 @@ function fixture({posting=false,manager=true,ambiguousOnce=false}={}){
  let number=0;
  const crypto={randomUUID:()=>('00000000-0000-4000-8000-'+String(++number).padStart(12,'0'))};
  runInNewContext(source,{window,document,crypto,Intl,FormData:FormDataFake,console:{error:e=>errors.push(e)}},{timeout:2500});
- const submit=values=>{
+ const submit=(values,id='cash-expense-ledger-form')=>{
   let prevented=false;
-  listeners.get('submit')({target:{id:'cash-expense-ledger-form',values},preventDefault(){prevented=true;}});
+  listeners.get('submit')({target:{id,values},preventDefault(){prevented=true;}});
   assert.equal(prevented,true);
  };
  const retry=()=>listeners.get('click')({target:{closest:()=>({id:'cash-adjustment-retry'})}});
- return{window,panel,requests,confirmations,errors,submit,retry,getAttempts:()=>attempts,getLedger:()=>savedExpense,getReloads:()=>calls};
+ return{window,panel,requests,confirmations,errors,submit,retry,getAttempts:()=>attempts,getLedger:()=>savedExpense,getRefund:()=>savedRefund,getReloads:()=>calls};
 }
 const settle=async()=>{for(let i=0;i<18;i++)await new Promise(r=>setImmediate(r));};
 
@@ -109,4 +116,29 @@ test('local Windows UI declines malformed amount and too-short reason without PO
  f.submit([['currency','IQD'],['amount','25'],['reason','bad']]);await settle();
  assert.equal(f.requests.filter(x=>x.opts.method==='POST').length,0);
  assert.equal(f.getLedger(),null);
+});
+
+test('full Windows refund is sent without user-supplied amount; original sale remains in ledger',async()=>{
+ const f=fixture({posting:true});
+ await f.window.zhiroxAdjustments.refresh();
+ assert.match(f.panel.innerHTML,/cash-refund-ledger-form/);
+ f.submit([['sale_id',uuid],['reason','QA full refund confirmed']],'cash-refund-ledger-form');
+ await settle();
+ const post=f.requests.find(x=>x.path==='/api/cash/refunds/'+uuid);
+ assert.ok(post,'Expected an authenticated refund request to SQLite backend');
+ assert.deepEqual(Object.keys(JSON.parse(post.opts.body)).sort(),['currency','reason','request_id']);
+ assert.equal(JSON.parse(post.opts.body).currency,'IQD');
+ assert.equal(f.getRefund().amount,-3000);
+ assert.equal(f.getRefund().sale_id,uuid);
+ assert.equal(f.getReloads(),1);
+ assert.match(f.panel.innerHTML,/QA full refund confirmed/);
+ assert.doesNotMatch(f.panel.innerHTML,/cash-adjustment-retry/);
+});
+test('full refund cannot post while adjustment flag is disabled',async()=>{
+ const f=fixture({posting:false});
+ await f.window.zhiroxAdjustments.refresh();
+ f.submit([['sale_id',uuid],['reason','QA full refund confirmed']],'cash-refund-ledger-form');
+ await settle();
+ assert.equal(f.requests.some(x=>x.opts.method==='POST'),false);
+ assert.equal(f.getRefund(),null);
 });
