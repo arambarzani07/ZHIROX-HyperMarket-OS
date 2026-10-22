@@ -103,6 +103,10 @@ SQL ـی پێشنیارکراو بۆ **Staging** لە `supabase/refund-stock-syn
 
 فەنکشنی جیا لە `supabase/functions/zhirox-capability-qa/` تەنها داواکاریی خوێندنەوەی Capability و پەڕەبەندی کۆگا بە مۆکی SQL جێبەجێ دەکات؛ هیچ جۆرە Refund/Expense ـێک بۆ Cloud نانێردرێت. قوفڵی Project Ref ـی Staging و Hash ـی Token، schema validation، 32KiB limit و 10s timeout زیاد کراون. تاقیکردنەوەی End-to-End ی ساختە بە SQLite پارێزراوە. ئەمە **هێشتا deploy ی ڕاستەقینە نییە**. [وردەکاری](EDGE_CAPABILITY_QA.md).
 
+## قۆناغی 0.35 — Staging Stock QA، دوو جار خوێندنەوە، بەبێ نووسین
+
+پشکنەری جیا `src/staging-stock-probe.mjs` و CLI `scripts/staging-stock-probe.mjs` زیاتر پاراستراون: دوو قوفڵی QA، ناونیشانی HTTPS ـی Staging ـی دیاریکراو، شناسی ئامێر/مارکێت، دووبارەخوێندنەوەی تەواوی کۆگا و پشکنینی SHA-256 ـی فایلە داتابەیسی QA. بە هیچ شێوەیەک کۆدی Refund/Expense یان Production Sync نانێرێت و هیچ جۆرە چالاککردنی خۆکاری نییە. [وردەکاری](STAGING_PROBE_QA.md).
+
 ## قۆناغی داهاتوو
 
 ١. دەسەڵاتی وردتر بۆ کردارە داهاتووەکان و ڕێگای گەڕاندنەوەی دەستگەیشتن لە لەبیرچوونی وشەی نهێنی.
