@@ -123,7 +123,7 @@ export function openPurchases(store,{cash=null}={}){
   return post(session,{request_id,...JSON.parse(intent.request_payload)},beforeCommit);
  }
  function cancelIntent(session,request_id){
-  const actor=permit(session,'purchases.create');
+  permit(session,'purchases.create');const actor=session.user.id;
   check(typeof request_id==='string'&&/^[A-Za-z0-9-]{16,80}$/.test(request_id),'ناسنامەی داواکاری نادروستە');
   db.exec('BEGIN IMMEDIATE');
   try{
