@@ -37,7 +37,7 @@ jobs:
           Write-Output "Read-only inventory succeeded. Queue count: $(@($report.printer_queues).Count); hardware unverified."
 
       - name: Validate scale barcode and scanner fail-closed rules
-        run: node --test test/hardware-readiness.test.mjs
+        run: node --test test/hardware-readiness.test.mjs test/receipt-print.test.mjs
 
       - name: Verify read-only preflight on actual Windows runner
         run: npm run windows:preflight
@@ -52,7 +52,7 @@ jobs:
       - name: Bundle SHA-256-verified upstream Node 24 x64 into QA-only portable ZIP
         shell: pwsh
         run: |
-          pwsh -NoProfile -File scripts/package-windows-selfcontained.ps1 -SourceZip dist/ZHIROX-Windows-Portable-0.26.0-dev.0.zip -OutputDir dist
+          pwsh -NoProfile -File scripts/package-windows-selfcontained.ps1 -SourceZip dist/ZHIROX-Windows-Portable-0.27.0-dev.0.zip -OutputDir dist
 
       - name: Verify standalone Node binary and manifest inside extracted QA-only ZIP
         shell: pwsh
@@ -79,7 +79,7 @@ jobs:
             if ($scanner.item_code -ne '0000202' -or $scanner.quantity -ne $null -or $scanner.price -ne $null -or $scanner.can_post_sale) { throw 'Packaged scale decoding is unsafe' }
             $hardware = & pwsh -NoProfile -File scripts/windows-device-inspect.ps1 | ConvertFrom-Json
             if (-not $hardware.read_only -or $hardware.printed_pages -ne 0 -or $hardware.destructive_actions -ne 0) { throw 'Packaged peripheral inspector is unsafe' }
-            & $node --test test/windows-preflight.test.mjs test/cash-recovery.test.mjs test/purchase-intent-restart-http.test.mjs test/windows-portable-start.test.mjs
+            & $node --test test/windows-preflight.test.mjs test/cash-recovery.test.mjs test/purchase-intent-restart-http.test.mjs test/windows-portable-start.test.mjs test/receipt-print.test.mjs
             if ($LASTEXITCODE -ne 0) { throw 'Bundled Node recovery smoke tests failed' }
           } finally { Pop-Location }
 
