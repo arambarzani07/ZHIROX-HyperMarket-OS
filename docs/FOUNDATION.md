@@ -95,6 +95,10 @@ Cash Adjustment ـەکان بە خشتەی نەگۆڕدراو و Cash Shift ـی
 
 SQL ـی پێشنیارکراو بۆ **Staging** لە `supabase/refund-stock-sync-staging.sql` جیاواز لە Live Edge Function ـە؛ دوو خشتەی RLS/immutable و endpoint ـێکی جیا بۆ گەڕاندنەوەی کۆگا زیاد دەکات. GitHub Actions بە PostgreSQL 17 ـی موقەتی، داتای ساختە و `ROLLBACK` پشکنینی tenant، device، full-refund و idempotency دەکات. هیچ SQL ـێکی داتابەیسی ڕاستەقینە نەگۆڕاوە و Sync ـی ناوخۆ قوفڵ ماوە. [ڕێنمایی](REFUND_POSTGRES_QA.md).
 
+## Capability Handshake و Stock Parity — 0.33.0-dev.0 (QA تەنها)
+
+دوو SQL function ـی Staging بە `SECURITY INVOKER` و `service_role` ـی ڕێپێدراو لە PostgreSQL ـی موقەتی دروست کراون: ناسینەوەی capability و خۆپشکنینی stock ـی کاڵاکان بە پەڕەی 1–500 و checkpoint. پشکنەری Node ـی ناوخۆ لە SQLite ـی تەنها-خوێندنەوە، ID و کۆگای هەموو کاڵا، داتای API ـی ساختە، pending Outbox و sequence یەک بە یەک بەراورد دەکات. **هیچ پەیوەندییەک بە Supabase ـی ڕاستەقینە، هیچ sync ـی پارە، هیچ گۆڕانی `main` نییە.** [وردەکاری](CAPABILITY_PARITY_QA.md).
+
 ## قۆناغی داهاتوو
 
 ١. دەسەڵاتی وردتر بۆ کردارە داهاتووەکان و ڕێگای گەڕاندنەوەی دەستگەیشتن لە لەبیرچوونی وشەی نهێنی.
