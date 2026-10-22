@@ -91,7 +91,7 @@ export function openCash(store){
   hasOpen:()=>Boolean(db.prepare('SELECT 1 FROM cash_shifts WHERE closed_at IS NULL LIMIT 1').get()),
   // Once ANY real shift has existed, a missing cash flag must never allow untracked cash sales.
   // This checks the historical ledger even when every drawer is closed; read-only, O(1).
-  hasHistory:()=>Boolean(db.prepare('SELECT 1 FROM cash_shifts LIMIT 1').get()),
+  hasHistory:()=>Boolean(db.prepare('SELECT 1 FROM cash_shifts LIMIT 1').get()||db.prepare('SELECT 1 FROM cash_ledger LIMIT 1').get()),
   status(session){
    allowed(session,'cash.read');
    const shifts=db.prepare('SELECT * FROM cash_shifts WHERE closed_at IS NULL ORDER BY currency').all().map(publicShift);
