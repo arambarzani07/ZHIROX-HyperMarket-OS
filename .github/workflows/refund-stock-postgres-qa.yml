@@ -6,6 +6,8 @@ on:
     paths:
       - 'supabase/refund-stock-sync-staging.sql'
       - 'supabase/tests/refund-stock-sync.sql'
+      - 'supabase/refund-capability-parity-staging.sql'
+      - 'supabase/tests/refund-capability-parity.sql'
       - 'supabase/schema.sql'
       - 'supabase/harden-sync.sql'
       - 'supabase/purchases-sync.sql'
@@ -45,7 +47,9 @@ jobs:
             supabase/harden-sync.sql \
             supabase/purchases-sync.sql \
             supabase/refund-stock-sync-staging.sql \
-            supabase/tests/refund-stock-sync.sql
+            supabase/refund-capability-parity-staging.sql \
+            supabase/tests/refund-stock-sync.sql \
+            supabase/tests/refund-capability-parity.sql
           do
             echo "Synthetic-only PostgreSQL SQL QA: $sql"
             docker exec -i "$PG_CONTAINER" psql -X -U postgres -d zhirox_synthetic_qa -v ON_ERROR_STOP=1 < "$sql"
