@@ -31,6 +31,10 @@ jobs:
       - name: Verify read-only preflight on actual Windows runner
         run: npm run windows:preflight
 
+      - name: Verify compatibility CMD preflight is read-only
+        shell: cmd
+        run: scripts\check-windows.cmd
+
       - name: Package committed portable source with local-only launcher
         run: npm run package:windows
 
@@ -51,6 +55,7 @@ jobs:
           }
           Push-Location $source
           try { node scripts\windows-preflight.mjs --json --strict; if ($LASTEXITCODE -ne 0) { throw 'Packaged preflight failed' } }
+          try { node --test test/cash-http.test.mjs test/purchase-intent-restart-http.test.mjs; if ($LASTEXITCODE -ne 0) { throw 'Extracted ZIP checkout/cash smoke tests failed' } }
           finally { Pop-Location }
 
       - name: Store QA-only portable ZIP and checksum for manual testing
