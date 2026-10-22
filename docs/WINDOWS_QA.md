@@ -1,4 +1,4 @@
-# Windows Acceptance Checklist — ZHIROX HyperMarket OS 0.29.0-dev.0
+# Windows Acceptance Checklist — ZHIROX HyperMarket OS 0.30.0-dev.0
 
 **Status:** NOT RUN on the supermarket's actual Windows PC. This is a QA protocol, not evidence of passing hardware tests. Existing Admin.exe, Cashier.exe, SQL Server and attached printers remain **100% read-only**; run tests only in an isolated ZHIROX data directory with dedicated test devices or user-authorized hardware.
 
@@ -45,6 +45,15 @@
 - [ ] Verify scale quantity, carton units, decimal precision, scanner disconnect/reconnect and printer failure reporting.
 - [ ] Observe cash-drawer open pulse using only dedicated test hardware if available and expressly authorized.
 - [ ] Disconnect network during TEST sale and purchase, reconnect, verify the ordered outbox and Supabase event checkpoint. Cash Ledger is **local SQLite only** and must be covered by backups.
+
+## 0.30 — Refund and expense acceptance gate (QA only)
+- [ ] Verify the launcher keeps `ZHIROX_ADJUSTMENT_POSTING` **OFF**, even when it is inherited from a shell.
+- [ ] Refund must be a **full** reversal of the previously cash-posted receipt; a second request for the same sale must return 409, while identical request-id replay returns the original adjustment with no stock movement.
+- [ ] Expense in IQD/USD must use exact integer minor units and must be refused when it exceeds current drawer balance.
+- [ ] Audit that cashier role, missing CSRF, already closed shift, wrong currency, and posted-sale **Void** are all rejected.
+- [ ] Crash during a refund must rollback cash, stock, adjustment and access audit in the same transaction.
+- [ ] Verify backup schema, cash/stock reconciliation and copy-only restore preserve refund/expense journals; no automatic stock or cash repair.
+- [ ] **Cloud adjustment synchronization, on-site printer hardware, cash drawer and real customer refund workflows have NOT been accepted.**
 
 ## 4 — Backup/recovery and approval
 - [ ] Create and verify a complete SQLite backup including cash shifts, cash ledger, immutable stock ledgers, purchase intents, audit, sessions and outbox.
