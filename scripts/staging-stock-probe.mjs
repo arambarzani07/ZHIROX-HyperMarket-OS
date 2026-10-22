@@ -31,12 +31,12 @@ export async function checkQAFile(file,{
  }finally{db.close();}
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
- if(process.argv.length!==5||process.argv[2]!=='--qa-readonly'||!process.argv[3]||process.argv[4]!=='--db'){
-  process.stderr.write('QA-only usage: node scripts/staging-stock-probe.mjs --qa-readonly QA_PATH --db\n');
+ if(process.argv.length!==5||process.argv[2]!=='--qa-readonly'||!process.argv[3]||process.argv[3]!=='--db'){
+  process.stderr.write('QA-only usage: node scripts/staging-stock-probe.mjs --qa-readonly --db QA_PATH\n');
   process.exitCode=2;
  }else{
   try{
-   const report=await checkQAFile(process.argv[3],{explicitReadOnly:true});
+   const report=await checkQAFile(process.argv[4],{explicitReadOnly:true});
    // Read-only aggregate report. Never print env, token, project names or product IDs.
    process.stdout.write(JSON.stringify(report,null,2)+'\n');
    if(report.parity_conditions_met!==true)process.exitCode=1;
