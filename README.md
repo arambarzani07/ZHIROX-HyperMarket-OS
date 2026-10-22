@@ -74,3 +74,4 @@ Production branch: `main`
 - [تۆمار، دەستکاری و پرۆفایلی دابینکەرەکان — 0.20.0](docs/SUPPLIERS.md)
 - [کڕینی نەقد، ledger و cloud sync ـی سنووردار — 0.21.0](docs/PURCHASE_PREVIEW.md)
 - [سندوقی نەقد و Cash Ledger ـی یەکپارچە — 0.22.0](docs/CASH.md)
+- [داواکاریی کڕینی پارێزراو و گەڕاندنەوەی سندوق — 0.23.0](docs/DURABLE_PURCHASES.md)
