@@ -16,6 +16,7 @@ set "ZHIROX_BIND=127.0.0.1"
 set "ZHIROX_PREVIEW="
 set "ZHIROX_PURCHASE_POSTING="
 set "ZHIROX_CASH_ACCOUNTING="
+set "ZHIROX_ADJUSTMENT_POSTING="
 set "PORT=3187"
 REM Prefer the bundled, versioned runtime. Do not silently use a different Node.exe.
 if exist "%~dp0runtime\node.exe" (
