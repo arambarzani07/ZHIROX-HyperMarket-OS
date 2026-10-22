@@ -83,6 +83,16 @@ const server=createServer(async(req,res)=>{res.setHeader('X-Content-Type-Options
   if(req.headers['x-zhirox-csrf']!==fresh.csrf)throw new DomainError('دانیشتن گۆڕاوە',403);
   return json(res,201,purchases.stage(fresh,input));
  }
+ const intentCancel=url.pathname.match(/^\/api\/purchases\/intents\/([A-Za-z0-9-]{16,80})\/cancel$/);
+ if(intentCancel&&req.method==='POST'){
+  auth.requirePermission(session,'purchases.create');
+  if(!purchasePostingEnabled)throw new DomainError('کڕین هێشتا چالاک نەکراوە',409);
+  const input=await body(req);
+  if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).length)throw new DomainError('داواکاریی هەڵوەشاندنەوە نادروستە');
+  const fresh=auth.session(token);auth.requirePermission(fresh,'purchases.create');
+  if(req.headers['x-zhirox-csrf']!==fresh.csrf)throw new DomainError('دانیشتن گۆڕاوە',403);
+  return json(res,200,purchases.cancelIntent(fresh,intentCancel[1]));
+ }
  const intentPost=url.pathname.match(/^\/api\/purchases\/intents\/([A-Za-z0-9-]{16,80})\/post$/);
  if(intentPost&&req.method==='POST'){
   auth.requirePermission(session,'purchases.create');
