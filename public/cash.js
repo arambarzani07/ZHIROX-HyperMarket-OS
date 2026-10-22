@@ -1,6 +1,6 @@
 (()=>{
  const root=document.getElementById('hyper-cards'),q=s=>root.querySelector(s);
- let generation=0,busy=false,shifts=[],events=[],enabled=false,pending=null;
+ let generation=0,busy=false,shifts=[],events=[],recentlyClosed=[],enabled=false,pending=null;
  const current=g=>g===generation&&window.zhiroxCurrentPage==='cash';
  const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const money=(n,c)=>new Intl.NumberFormat('en-US',{minimumFractionDigits:c==='USD'?2:0,maximumFractionDigits:c==='USD'?2:0}).format(n/(c==='USD'?100:1));
@@ -13,7 +13,7 @@
   if(!Number.isSafeInteger(result))throw Error('بڕی پارە لە سنوور دەرچوو');
   return result;
  }
- function clear(){generation++;busy=false;pending=null;shifts=[];events=[];enabled=false;}
+ function clear(){generation++;busy=false;pending=null;shifts=[];events=[];recentlyClosed=[];enabled=false;}
  function paint(){
   const view=q('#cash-data');if(!view)return;
   const manage=window.zhiroxAuth.can('cash.manage');
@@ -25,6 +25,10 @@
    '<p class="sub">باڵانس لە تۆمارەکانی Opening، فرۆشتنی نەقدی پاک و کڕینی نەقد هەژمار دەکرێت. پارەی دەستی/ڕادەستکردن هێشتا چالاک نییە.</p></section>'+
    '<section class="panel"><h2>کۆتا جووڵەکانی پارە</h2><div class="tablewrap"><table><thead><tr><th>کات</th><th>دراو</th><th>جۆر</th><th>گۆڕانی پارە</th></tr></thead><tbody>'+
    (events.length?events.map(e=>'<tr><td dir="ltr">'+esc(date(e.created_at))+'</td><td>'+esc(e.currency)+'</td><td>'+esc(({opening:'پارەی سەرەتایی',sale:'فرۆشتن',purchase:'کڕین'})[e.kind]||e.kind)+'</td><td dir="ltr">'+money(e.amount,e.currency)+'</td></tr>').join(''):'<tr><td colspan="4">هیچ جووڵەیەک تۆمار نەکراوە.</td></tr>')+'</tbody></table></div></section>';
+  if(recentlyClosed.length&&window.zhiroxAuth.can('cash.manage')){
+   view.insertAdjacentHTML('beforeend','<section class="panel"><h2>شەفتە داخراوەکان — کۆتا ٢٠</h2><p class="sub">ئەگەر وەڵامی داخستنی سندوق ون بووبێت، لێرە دۆخی ڕاستەقینە و جیاوازی ژماردنەکە ببینە. لە ڕووکاری نوێدا هەمان پارە دووبارە تۆمار مەکە.</p><div class="tablewrap"><table><thead><tr><th>دراو</th><th>کاتی داخستن</th><th>باڵانسی چاوەڕوانکراو</th><th>بڕی ژمێردراو</th><th>جیاوازی</th></tr></thead><tbody>'+
+    recentlyClosed.map(s=>'<tr><td>'+esc(s.currency)+'</td><td dir="ltr">'+esc(date(s.closed_at))+'</td><td dir="ltr">'+money(s.balance,s.currency)+'</td><td dir="ltr">'+money(s.counted_amount,s.currency)+'</td><td dir="ltr">'+money(s.discrepancy,s.currency)+'</td></tr>').join('')+'</tbody></table></div></section>');
+  }
   view.querySelectorAll('input,select,button').forEach(el=>el.disabled=busy);
   if(!pending||pending.kind!=='close')q('#cash-confirm').hidden=true;
   if(pending&&pending.kind==='close'){
@@ -34,7 +38,7 @@
  }
  async function load(){
   const g=generation;
-  try{const response=await window.zhiroxRequest('/api/cash');if(!current(g))return;enabled=response.enabled===true;shifts=response.shifts;events=response.events;paint();}
+  try{const response=await window.zhiroxRequest('/api/cash');if(!current(g))return;enabled=response.enabled===true;shifts=response.shifts;events=response.events;recentlyClosed=response.recently_closed||[];paint();}
   catch(e){if(current(g))status(e.message,true);}
  }
  function render(){
