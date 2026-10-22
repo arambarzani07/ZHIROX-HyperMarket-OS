@@ -49,7 +49,7 @@ Production branch: `main`
 
 - [هاوکاتکردنی Supabase — 0.3.0](docs/SYNC.md)
 
-- [پاکێجی Portable Windows و Preflight ـی بێ نووسین — 0.24.0-dev.0](docs/WINDOWS.md)
+- [پاکێجی Windows QA ـی خۆبەخۆ بە Node 24 ـی تێخراو — 0.25.0-dev.0](docs/WINDOWS.md)
 
 - [سەبەتەی پارێزراو و فرۆشتنی بێ دووبارە — 0.4.0](docs/CHECKOUT.md)
 
