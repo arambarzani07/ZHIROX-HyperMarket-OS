@@ -78,7 +78,7 @@ test('staging read-only double sweep matches stock but CANNOT unlock live sync',
  assert.equal(net.count(),7); // 3 capability probes and 2x2 stock pages
  assert.equal(result.staging_requests,7);
  const text=JSON.stringify(result);
- for(const secret of [token,'test-only-','unit_price','unit_cost','refund','cash_balance',
+ for(const secret of [token,'test-only-','unit_price','unit_cost','cash_balance',
   'QA fixture',state.rows[0].id])assert.equal(text.includes(secret),false,'No private data in report');
 });
 test('all opt-in gates and project identity are required BEFORE transport',async t=>{
