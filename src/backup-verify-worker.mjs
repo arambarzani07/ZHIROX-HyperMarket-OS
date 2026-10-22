@@ -18,6 +18,10 @@ try{
    required.purchase_items=['id','purchase_id','product_id'];
    required.purchase_stock_ledger=['id','product_id','delta_milli'];
   }
+  if(db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='cash_adjustments'").get()){
+   required.cash_adjustments=['id','request_id','shift_id','actor_id','kind','sale_id','currency','amount','reason','created_at'];
+   required.refund_stock_ledger=['id','adjustment_id','product_id','delta_milli','created_at'];
+  }
   if(db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='purchase_intents'").get()){
    required.purchase_intents=['request_id','actor_id','request_payload','supplier_id','currency','total','created_at'];
    required.purchase_intent_cancellations=['request_id','actor_id','created_at'];
