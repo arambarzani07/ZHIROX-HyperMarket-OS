@@ -6,8 +6,23 @@ test('cash shift HTTP enforces CSRF, role guards and atomic net-of-change sale s
  const dir=mkdtempSync(join(tmpdir(),'zhirox-cash-http-')),port=42000+Math.floor(Math.random()*10000);
  const child=spawn(process.execPath,['src/server.mjs'],{env:{...process.env,PORT:String(port),ZHIROX_DATA_DIR:dir,ZHIROX_CASH_ACCOUNTING:'enabled',ZHIROX_PURCHASE_POSTING:'enabled'},stdio:['ignore','pipe','pipe']});
  t.after(async()=>{if(child.exitCode===null){child.kill('SIGTERM');await once(child,'exit')}rmSync(dir,{recursive:true,force:true})});
- await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('startup timeout')),12000);child.stdout.once('data',()=>{clearTimeout(timer);resolve()});child.once('error',error=>{clearTimeout(timer);reject(error)})});
  const base='http://127.0.0.1:'+port;
+ // Windows extracted ZIP jobs can be busy; stdout is NOT a reliable readiness probe.
+ // Probe the actual local health endpoint with a bounded, diagnostic 30s deadline.
+ let stderr='';
+ child.stderr.on('data',chunk=>{stderr=(stderr+String(chunk)).slice(-3000);});
+ const deadline=Date.now()+30000;
+ let ready=false;
+ while(Date.now()<deadline){
+  if(child.exitCode!==null||child.signalCode!==null)
+   throw Error('QA server exited before health readiness: code='+child.exitCode+' stderr='+stderr);
+  try{
+   const response=await fetch(base+'/api/health',{signal:AbortSignal.timeout(600)});
+   if(response.status===200){ready=true;break;}
+  }catch{}
+  await new Promise(resolve=>setTimeout(resolve,180));
+ }
+ if(!ready)throw Error('isolated QA backend health startup timed out after 30s; stderr='+stderr);
  const send=(path,data,headers={})=>fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json',...headers},body:JSON.stringify(data)});
  const state=await send('/api/auth/setup',{name:'Owner',username:'owner',password:'cash-http-fixture-password'});
  assert.equal(state.status,201);const user=await state.json(),cookie=state.headers.get('set-cookie').split(';')[0];
