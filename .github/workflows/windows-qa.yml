@@ -83,6 +83,11 @@ jobs:
             if (-not $hardware.read_only -or $hardware.printed_pages -ne 0 -or $hardware.destructive_actions -ne 0) { throw 'Packaged peripheral inspector is unsafe' }
             & $node --test test/windows-preflight.test.mjs test/cash-recovery.test.mjs test/purchase-intent-restart-http.test.mjs test/windows-portable-start.test.mjs test/receipt-print.test.mjs test/receipt-visual-qa.test.mjs
             if ($LASTEXITCODE -ne 0) { throw 'Bundled Node recovery smoke tests failed' }
+            $capture = Join-Path $env:GITHUB_WORKSPACE 'dist/receipt-visual-qa'
+            & $node scripts/receipt-visual-qa.mjs $capture
+            if ($LASTEXITCODE -ne 0) { throw 'Headless Windows Chrome/Edge visual receipt QA failed' }
+            $audit = Get-Content -LiteralPath (Join-Path $capture 'audit.json') -Raw | ConvertFrom-Json
+            if ($audit.passed -ne 3 -or $audit.printed_pages -ne 0 -or $audit.hardware_verified -ne $false) { throw 'Visual audit result invalid' }
           } finally { Pop-Location }
 
       - name: Verify SHA-256, ZIP contents and launch preflight from extracted package
@@ -107,6 +112,14 @@ jobs:
             node --test test/cash-http.test.mjs test/purchase-intent-restart-http.test.mjs
             if ($LASTEXITCODE -ne 0) { throw 'Extracted ZIP checkout/cash smoke tests failed' }
           } finally { Pop-Location }
+
+      - name: Upload synthetic receipt visuals for read-only inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: zhirox-receipt-visual-qa
+          path: dist/receipt-visual-qa/
+          retention-days: 7
+          if-no-files-found: error
 
       - name: Store QA-only portable ZIP and checksum for manual testing
         uses: actions/upload-artifact@v4
