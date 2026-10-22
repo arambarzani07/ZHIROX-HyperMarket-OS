@@ -43,7 +43,7 @@
 - تەنها خاوەن/بەڕێوەبەر (`cash.manage`)؛ هەموو POST ـەکان CSRF و recheck ـی دانیشتن هەیە. بێ سندوقی کراوە، بڕی پارەی ناکافی، currency ناگونجاو، refund ـی دووبارە یان پسوولەی cash ـی پشتڕاستنەکراو ڕەت دەکرێنەوە.
 - `cash_adjustments` و `refund_stock_ledger` خشتەی additive، unique request_id و Trigger ـی **immutable** ـن. Refund پارەی `cash_shifts.balance` کەم دەکات و بڕی تەواوی کاڵاکان بە stock reversal ledger دەگەڕێنێتەوە، هەموویان لە **یەک SQLite transaction**؛ sale، stock_ledger و cash_ledger ـی کۆن ناگۆڕدرێن.
 - `reconcile` cash adjustments و refund stock ledger و cache دەپشکنێت. باکئەپ/کۆپیی recovery هەمان خشتەکان دەخوێنێتەوە. Retry ـی هەمان request_id **پارە دووبارە ناکەمێنێت**.
-- **گرنگ:** گەڕاندنەوەکانی 0.30 هێشتا بە Supabase sync ناکرێن، ڕووکاری بەکارهێنەری تەواوی Refund/Expense نییە، و گەڕاندنەوەی پارەی ڕاستەقینە تاقی نەکراوە. تا Cloud reconciliation و QA ـی هاردوێر تەواو نەبن، Production قوفڵە.
+- **گرنگ:** گەڕاندنەوەکانی 0.30 هێشتا بە Supabase sync ناکرێن. بۆیە API ـی Refund/Expense کاتێک Cloud Sync چالاک بێت قوفڵە و ئەگەر مێژووی Refund/Expense ـی تاقیکردنەوە هەبێت، دەستپێکردنی Cloud Sync ـی نوێ ڕەت دەکرێتەوە. ڕووکاری بەکارهێنەری تەواوی Refund/Expense نییە و پارەی ڕاستەقینە تاقی نەکراوە. تا Cloud reconciliation و QA ـی هاردوێر تەواو نەبن، Production قوفڵە.
 
 ## سنووری گرنگ
 
