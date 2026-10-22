@@ -1,4 +1,4 @@
-# ZHIROX — Receipt Printing & Browser QA (0.27.0-dev.0)
+# ZHIROX — Receipt Printing & Browser QA (0.28.0-dev.0)
 
 **Status:** Ready for print preview/code verification, **not yet verified with a physical market receipt printer**. The approved home/card design, Windows legacy POS, and production printer settings remain unchanged.
 
@@ -23,7 +23,14 @@ The browser and driver decide pagination, margins, text shaping, cutter behavior
 6. Test a long item name, 30+ items, a long receipt spanning pages, USD cents, IQD whole dinars and mixed Kurdish/Latin product names. Compare printed totals with the immutable SQLite receipt.
 7. There is **no cash drawer test or integration** at this stage; printer queue enumeration is not proof of functionality.
 
+## Windows Chromium visual QA — 0.28
+
+- `scripts/receipt-visual-fixtures.mjs` creates **three synthetic, isolated** HTML QA files: 58mm IQD with mixed Kurdish/Latin names, 80mm USD cents, and a **38-item Sorani 58mm** receipt. They use the exact checked-in `public/receipt-print.js` and `public/receipt-print.css`, not real customer or market data.
+- `scripts/receipt-visual-qa.mjs` launches already installed headless Windows **Google Chrome or Microsoft Edge**, loads only local `file://` fixtures, and checks the actual computed CSS width (58/80mm), RTL direction, item row count, total caption, invalid/unsafe nodes and horizontal overflow. It stores 3 PNG screenshots and `audit.json`.
+- CI saves the screenshots as the 7-day artifact **`zhirox-receipt-visual-qa`**, separate from the unsigned QA application ZIP. Visual artifacts show **synthetic receipts only** and have no production data, printer driver settings or Windows spool activity.
+- These checks verify browser layout metrics but **do not establish that Sorani glyphs printed correctly on a physical thermal printer**, paper roll feed, cut, margin or compatibility with a specific driver.
+
 ## Automated checks
-`test/receipt-print.test.mjs` validates immutable receipt input requirements, IQD/USD precision, 58/80mm selection, HTML escaping, RTL semantics, print-only CSS, and that `window.print()` is called only by explicit click. GitHub Actions on Windows runs these tests from repository source and the self-contained portable QA ZIP.
+`test/receipt-visual-qa.test.mjs` verifies synthetic fixtures, browser audit guards and nonprinting behavior. `test/receipt-print.test.mjs` validates immutable receipt input requirements, IQD/USD precision, 58/80mm selection, HTML escaping, RTL semantics, print-only CSS, and that `window.print()` is called only by explicit click. GitHub Actions on Windows runs these tests from repository source and the self-contained portable QA ZIP.
 
 **Approval gate:** Windows browser print preview is not an operational sign-off. Production remains blocked pending on-site QA, printer model/driver check, scale format validation, and explicit release approval.
