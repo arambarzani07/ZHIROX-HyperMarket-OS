@@ -46,7 +46,7 @@ function fixture({enabled=false,dropFirst=false,name='<img src=x onerror=alert(1
   if(handler)assert.equal(prevented,true);
  };
  const submit=(id,data)=>emit('submit',{id,data},true);
- const click=id=>events.get('click')({target:{id,closest:()=>({id})}});
+ const click=id=>events.get('click')({target:{id,closest:()=>({id,dataset:{}})}});
  const customerClick=()=>events.get('click')({target:{closest:()=>({dataset:{debtCustomer:customer}})}});
  return{window,nodes,posts,requests,confirms,submit,click,customerClick,getBalance:()=>balance};
 }
