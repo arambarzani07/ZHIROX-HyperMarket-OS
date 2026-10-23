@@ -1,3 +1,4 @@
+import {inspectDebt} from './debt-integrity.mjs';
 // Customer registry lives in local SQLite only. No debt postings, cloud or old POS writes.
 import {randomUUID} from 'node:crypto';
 import {DomainError} from './store.mjs';
@@ -62,10 +63,9 @@ export function openCustomers(store){
    if(!changed.length)return{customer:show(before,session),unchanged:true};
    // Credit limit is a HARD ceiling once an immutable debt ledger exists.
    // A lower limit may not strand a customer below already posted debt.
-   if(changed.includes('credit_limit')&&db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='customer_debt_balances'").get()){
-    const cached=db.prepare('SELECT balance,currency FROM customer_debt_balances WHERE customer_id=?').get(id);
-    const latest=db.prepare('SELECT balance_after,currency FROM customer_debt_ledger WHERE customer_id=? ORDER BY rowid DESC LIMIT 1').get(id);
-    check(!((cached&&!latest)||(latest&&!cached)||(cached&&latest&&(cached.balance!==latest.balance_after||cached.currency!==latest.currency||cached.currency!==before.currency))), 'هەڵەی هاوسەنگیی Ledger ـی قەرز؛ گۆڕینی سنوور ڕاگیرا',409);
+   if(changed.includes('credit_limit')&&['customer_debt_ledger','customer_debt_balances'].some(name=>db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name=?").get(name))){
+    check(inspectDebt(db,{customerId:id}).ok,'هەڵەی هاوسەنگیی Ledger ـی قەرز؛ گۆڕینی سنوور ڕاگیرا',409);
+    const cached=db.prepare('SELECT balance FROM customer_debt_balances WHERE customer_id=?').get(id);
     check(after.credit_limit>=(cached?.balance||0),'سنووری نوێ نابێت لە قەرزی ماوە کەمتر بێت',409);
    }
    const at=new Date().toISOString();

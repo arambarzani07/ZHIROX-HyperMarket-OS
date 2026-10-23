@@ -26,6 +26,11 @@ try{
    required.purchase_intents=['request_id','actor_id','request_payload','supplier_id','currency','total','created_at'];
    required.purchase_intent_cancellations=['request_id','actor_id','created_at'];
   }
+  if(['customer_debt_ledger','customer_debt_balances'].some(name=>db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name=?").get(name))){
+   required.customers=['id','currency','credit_limit'];
+   required.customer_debt_ledger=['id','request_id','customer_id','actor_id','kind','currency','amount','delta','balance_after','note','created_at'];
+   required.customer_debt_balances=['customer_id','currency','balance','updated_at'];
+  }
   const schema_ok=Object.entries(required).every(([table,columns])=>db.prepare("SELECT 1 FROM sqlite_schema WHERE name=? AND type='table'").get(table)&&columns.every(c=>db.prepare(`PRAGMA table_info(${table})`).all().some(x=>x.name===c)));
   if(!schema_ok)result={ok:false,reason:'schema_incompatible'};
   else if(db.prepare('PRAGMA foreign_key_check').get())result={ok:false,reason:'foreign_key_failed'};

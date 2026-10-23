@@ -1,3 +1,4 @@
+import {inspectDebt} from './debt-integrity.mjs';
 // Persistent, ledger-first CUSTOMER CREDIT for the new ZHIROX SQLite database.
 // No old POS access, no cloud outbox, no sale/stock posting and no cash drawer posting.
 // Debt repayment here is a MANUAL ledger record, NOT verified physical cash receipt.
@@ -27,16 +28,14 @@ export function openDebt(store){
   requireValue(c,'کڕیار نەدۆزرایەوە',404);
   return c;
  }
- function balance(id,currency){
-  const cache=db.prepare('SELECT currency,balance FROM customer_debt_balances WHERE customer_id=?').get(id);
-  const last=db.prepare('SELECT currency,balance_after FROM customer_debt_ledger WHERE customer_id=? ORDER BY rowid DESC LIMIT 1').get(id);
-  if((cache&&!last)||(last&&!cache)||(cache&&cache.currency!==currency)||(last&&last.currency!==currency)||(cache&&last&&cache.balance!==last.balance_after))
-   throw new DomainError('هاوسەنگیی Ledger و Balance ـی قەرز نایەکسانە؛ کردار ڕاگیرا',409);
+ function balance(id){
+  requireValue(inspectDebt(db,{customerId:id}).ok,'هاوسەنگیی Ledger و Balance ـی قەرز نایەکسانە؛ کردار ڕاگیرا',409);
+  const cache=db.prepare('SELECT balance FROM customer_debt_balances WHERE customer_id=?').get(id);
   return cache?.balance??0;
  }
  function summary(session,customerId){
   permit(session,'debt.read');
-  const c=customer(customerId),current=balance(c.id,c.currency);
+  const c=customer(customerId),current=balance(c.id);
   return{customer:{id:c.id,code:c.code,name:c.name,currency:c.currency,active:Boolean(c.active),credit_limit:c.credit_limit},
    balance:current,available_credit:Math.max(0,c.credit_limit-current),posting_requires_cash_confirmation:true};
  }
@@ -75,11 +74,11 @@ export function openDebt(store){
     requireValue(existing.actor_id===actor,'ناسنامەی داواکاری بۆ هەژمارێکی ترە',403);
     requireValue(JSON.stringify({customer_id:existing.customer_id,kind:existing.kind,amount:existing.amount,note:existing.note})===payload,'هەمان داواکاری بۆ مامەڵەی جیاواز ڕەتکرایەوە',409);
     const c=customer(cId);
-    balance(cId,c.currency);
+    balance(cId);
     db.exec('COMMIT');
     return{entry:publicEntry(existing),replayed:true};
    }
-   const c=customer(cId),before=balance(c.id,c.currency);
+   const c=customer(cId),before=balance(c.id);
    if(input.kind==='debt')requireValue(c.active===1,'کڕیار ناچالاکە؛ قەرزی نوێ قەدەغەیە',409);
    const next=input.kind==='debt'?before+input.amount:before-input.amount;
    requireValue(Number.isSafeInteger(next)&&next>=0,'پارەدانەوە لە قەرزی ماوە زیاترە',409);

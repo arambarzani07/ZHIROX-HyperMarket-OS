@@ -130,3 +130,62 @@ test('invalid ledger inputs fail closed and do not disclose private notes in aud
  assert.equal(audit.details.includes(note),false);
  assert.equal(f.debt.list(f.user('owner'),c.id).entries[0].note,note);
 });
+
+test('full debt history rejects altered earlier balances even when latest/cache agree',t=>{
+ const f=fixture(t),c=create(f);
+ const first=post(f,c.id,'debt',800);
+ post(f,c.id,'payment',300);
+ f.store.db.exec('DROP TRIGGER customer_debt_no_update');
+ f.store.db.prepare('UPDATE customer_debt_ledger SET balance_after=700 WHERE id=?').run(first.entry.id);
+ // Latest balance and cache are both 500, so a last-row-only check misses this.
+ assert.throws(()=>f.debt.summary(f.user('owner'),c.id),e=>e.status===409);
+ assert.throws(()=>post(f,c.id,'debt',100),e=>e.status===409);
+ assert.throws(()=>f.customers.update(f.user('owner'),c.id,{revision:1,credit_limit:9000}),e=>e.status===409);
+ assert.equal(f.store.db.prepare('SELECT count(*) n FROM customer_debt_ledger').get().n,2);
+});
+
+test('recovery reconciliation verifies debt read-only and rejects corrupt/missing debt tables',async t=>{
+ const {reconcile}=await import('../src/reconcile.mjs');
+ const {inspectDebt}=await import('../src/debt-integrity.mjs');
+ const {verifySQLite}=await import('../src/verify-sqlite.mjs');
+ const f=fixture(t),c=create(f);
+ post(f,c.id,'debt',800);post(f,c.id,'payment',300);
+ const file=f.store.db.prepare('PRAGMA database_list').get().file;
+ const {readFileSync}=await import('node:fs');
+ const {createHash}=await import('node:crypto');
+ f.store.db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+ const digest=()=>createHash('sha256').update(readFileSync(file)).digest('hex');
+ const before=digest();
+ f.store.db.exec('PRAGMA query_only=ON');
+ assert.equal(inspectDebt(f.store.db).ok,true);
+ assert.equal(reconcile(f.store.db).ok,true);
+ assert.deepEqual(inspectDebt(f.store.db).checked,{debt_customers:1,debt_entries:2});
+ assert.equal((await verifySQLite(file,{reconcile:true})).ok,true);
+ assert.equal(digest(),before);
+ f.store.db.exec('PRAGMA query_only=OFF');
+ f.store.db.prepare('UPDATE customer_debt_balances SET balance=499 WHERE customer_id=?').run(c.id);
+ assert.equal(reconcile(f.store.db).ok,false);
+ assert.equal(reconcile(f.store.db).failures.debt_balances,1);
+ const corrupt=await verifySQLite(file,{reconcile:true});
+ assert.equal(corrupt.ok,false);assert.equal(corrupt.reason,'reconciliation_failed');
+ f.store.db.exec('DROP TABLE customer_debt_balances');
+ assert.equal(inspectDebt(f.store.db).failures.debt_schema,1);
+ assert.throws(()=>f.customers.update(f.user('owner'),c.id,{revision:1,credit_limit:9000}),e=>e.status===409);
+ const missing=await verifySQLite(file,{reconcile:true});
+ assert.equal(missing.ok,false);assert.equal(missing.reason,'schema_incompatible');
+});
+
+test('exact debt aggregation detects forged history and orphan cache without leaking notes',async t=>{
+ const {inspectDebt}=await import('../src/debt-integrity.mjs');
+ const f=fixture(t),a=create(f,'CHECK-A'),b=create(f,'CHECK-B');
+ const first=post(f,a.id,'debt',1000,'QA private history');
+ post(f,a.id,'payment',400);
+ f.store.db.exec('DROP TRIGGER customer_debt_no_update');
+ f.store.db.prepare('UPDATE customer_debt_ledger SET amount=900,delta=900 WHERE id=?').run(first.entry.id);
+ assert.equal(inspectDebt(f.store.db).ok,false);
+ assert.equal(inspectDebt(f.store.db,{customerId:b.id}).ok,true);
+ f.store.db.prepare('INSERT INTO customer_debt_balances VALUES(?,?,?,?)').run(b.id,'IQD',0,new Date().toISOString());
+ assert.equal(inspectDebt(f.store.db,{customerId:b.id}).failures.debt_balances,1);
+ assert.equal(JSON.stringify(inspectDebt(f.store.db)).includes('QA private history'),false);
+ assert.equal(JSON.stringify(inspectDebt(f.store.db)).includes(a.id),false);
+});

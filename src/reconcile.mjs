@@ -1,3 +1,4 @@
+import {inspectDebt} from './debt-integrity.mjs';
 // Read-only validation of the currently supported opening-stock/cash-sale model.
 // BigInt keeps arithmetic exact even when aggregate quantities exceed JS safe integers.
 const max=BigInt(Number.MAX_SAFE_INTEGER);
@@ -134,5 +135,7 @@ export function reconcile(db){
   const wanted=demand.get(sale)||new Map(),actual=movements.get(sale)||new Map();
   for(const product of new Set([...wanted.keys(),...actual.keys()]))if(wanted.get(product)!==actual.get(product))failures.sale_movements++;
  }
- return{ok:Object.values(failures).every(n=>n===0),model:cashShiftCount?'cash-register-ledger-v3':purchaseCount?'opening-stock-and-cash-sales-and-purchases-v2':'opening-stock-and-cash-sales-v1',checked:{products:products.size,receipts:sales.size,sale_items:itemCount,stock_movements:movementCount,...(purchaseCount?{purchases:purchaseCount,purchase_items:purchaseItemCount,purchase_stock_movements:purchaseMovementCount}:{}),...(cashShiftCount?{cash_shifts:cashShiftCount,cash_movements:cashMovementCount}:{})},failures};
+ const debt=inspectDebt(db);
+ Object.assign(failures,debt.failures);
+ return{ok:Object.values(failures).every(n=>n===0),model:cashShiftCount?'cash-register-ledger-v3':purchaseCount?'opening-stock-and-cash-sales-and-purchases-v2':'opening-stock-and-cash-sales-v1',checked:{...(debt.checked.debt_customers||debt.checked.debt_entries?debt.checked:{}),products:products.size,receipts:sales.size,sale_items:itemCount,stock_movements:movementCount,...(purchaseCount?{purchases:purchaseCount,purchase_items:purchaseItemCount,purchase_stock_movements:purchaseMovementCount}:{}),...(cashShiftCount?{cash_shifts:cashShiftCount,cash_movements:cashMovementCount}:{})},failures};
 }

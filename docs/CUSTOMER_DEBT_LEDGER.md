@@ -8,7 +8,7 @@ The customer registry already persists customer code, identity, immutable curren
 
 ### Real implemented core
 
-- `src/debt.mjs`: append-only `customer_debt_ledger` with **immutable UPDATE/DELETE triggers**. Separate transactional `customer_debt_balances` cache, verified against latest immutable ledger state before read/post.
+- `src/debt.mjs`: append-only `customer_debt_ledger` with **immutable UPDATE/DELETE triggers**. Separate transactional `customer_debt_balances` cache, verified against the entire immutable customer ledger before read/post.
 - IQD represented by exact whole dinars, USD by exact cents (integer minor units); every customer retains its original currency. The engine never mixes currencies and never converts between them.
 - Manual ledger transactions are `debt` (increase liability) and `payment` (decrease liability). Debt entries are **not sales**, do **not** alter product stock, are **not** sent to Supabase, and do **not** post/reconcile physical cash. A payment entry here does not prove any cashier drawer received money.
 - Posting occurs in one `BEGIN IMMEDIATE` SQLite transaction: validate existing customer, active status for new debt, hard credit ceiling and no over-repayment; insert immutable entry, update balance cache and write essential audit. Failure rolls back all writes.
@@ -34,3 +34,11 @@ Therefore **do not post a real customer credit sale or actual cash repayment usi
 ## Project constraints remain
 
 No `main` merge, old Admin.exe/Cashier.exe/SQL writes, Supabase production updates, demo-generated customer data, or platform builds/deployments are part of this core-development milestone.
+
+## Complete-history integrity and recovery
+
+`src/debt-integrity.mjs` validates every stored delta and running balance using BigInt, checks currency against the customer, and verifies the cache exactly matches the complete history. Comparing only the last entry and cache could miss corruption of earlier entries. Customer reads, new postings, idempotent replays and credit-limit changes now refuse inconsistent history with HTTP 409. The inspection never repairs or alters records and returns aggregate counts only.
+
+The same validation is part of global `reconcile()` and copy-only backup recovery verification. Debt-bearing backups require both ledger and balance tables and the customer columns they reference. Old backups with no debt tables remain compatible. A backup with inconsistent debt is rejected for recovery; it is never silently repaired. This validates internal arithmetic and references, not authenticity against a coordinated rewrite of the whole database.
+
+Regression tests exercise historical tampering while last-row/cache still match, forged deltas, orphan caches, per-customer isolation, query-only inspection, original database SHA-256 preservation, and recovery refusal for corrupt/missing tables. This work changes core services only; it does not create platform builds or publish previews.
