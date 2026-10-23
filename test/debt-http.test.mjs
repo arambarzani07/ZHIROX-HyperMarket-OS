@@ -48,6 +48,8 @@ test('manual debt remains OFF by default; after opt-in it is atomic, idempotent,
  child=await start(dir,port,false);
  const anon=await call(base,'/api/debt/config');
  assert.equal(anon.status,401);
+ const anonAudit=await call(base,'/api/debt/integrity');
+ assert.equal(anonAudit.status,401);
  const setup=await call(base,'/api/auth/setup',{method:'POST',
   data:{name:'QA owner',username:'qaowner',password:'qa-strong-password-fixture-only'}});
  assert.equal(setup.status,201);
@@ -57,6 +59,12 @@ test('manual debt remains OFF by default; after opt-in it is atomic, idempotent,
   phone:'',currency:'IQD',credit_limit:5000}});
  assert.equal(customer.status,201);
  const id=customer.data.customer.id;
+ const beforeAudit=await call(base,'/api/debt/integrity',{auth:owner});
+ assert.equal(beforeAudit.status,200);
+ assert.equal(beforeAudit.data.ok,true);
+ assert.equal(beforeAudit.data.customers,1);
+ assert.equal(beforeAudit.data.entries,0);
+ assert.equal(beforeAudit.data.db_writes,0);
  const initial=await call(base,'/api/debt/customers/'+id,{auth:owner});
  assert.equal(initial.status,200);assert.equal(initial.data.balance,0);
  assert.deepEqual(initial.data.entries,[]);
