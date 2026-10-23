@@ -1,0 +1,32 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtempSync,rmSync,readFileSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {createHash} from 'node:crypto';
+import {mobilePreviewHtml,writeMobilePreview} from '../scripts/mobile-ui-preview.mjs';
+const fragment=readFileSync(new URL('../design/approved-card-home.html',import.meta.url),'utf8');
+const manifest=JSON.parse(readFileSync(new URL('../design/manifest.json',import.meta.url),'utf8'));
+test('iPhone QA preview contains byte-exact unchanged six-card approved UI',()=>{
+ const html=mobilePreviewHtml();
+ assert.ok(html.startsWith('<!doctype html>'));
+ assert.ok(html.includes('<meta name="viewport"'));
+ assert.ok(html.includes('<main>'+fragment+'</main>'));
+ assert.equal(html.split(fragment).length-1,1);
+ assert.equal(createHash('sha256').update(fragment).digest('hex'),manifest.sha256);
+ assert.match(html,/پێشبینین — QA تەنها/);
+ assert.match(html,/lang="ckb" dir="rtl"/);
+});
+test('offline iPhone preview is self-contained, no network and cannot post real market data',t=>{
+ const dir=mkdtempSync(join(tmpdir(),'zhirox-iphone-preview-'));
+ t.after(()=>rmSync(dir,{force:true,recursive:true}));
+ const result=writeMobilePreview(dir);
+ assert.equal(result.qa_only,true);
+ assert.equal(result.offline,true);
+ assert.equal(result.live_data,false);
+ assert.equal(result.design_changed,false);
+ const html=readFileSync(result.path,'utf8');
+ assert.equal(createHash('sha256').update(html).digest('hex'),result.sha256);
+ assert.doesNotMatch(html,/<(?:script|link)[^>]+\bsrc=|<iframe\b|fetch\s*\(|XMLHttpRequest|localhost:3187|SUPABASE_/i);
+ assert.ok(html.includes('id="hyper-cards"'));
+});

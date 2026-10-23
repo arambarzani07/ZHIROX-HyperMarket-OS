@@ -1,0 +1,85 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+import {openStore} from '../src/store.mjs';
+import {openAuth,PERMISSIONS} from '../src/auth.mjs';
+import {openCash} from '../src/cash.mjs';
+import {openCashAdjustments} from '../src/cash-adjustments.mjs';
+import {reconcile} from '../src/reconcile.mjs';
+function fixture(t,{currency='IQD'}={}){
+ const store=openStore(':memory:');openAuth(store.db);
+ for(const role of ['owner','manager','cashier'])store.db.prepare('INSERT INTO auth_users VALUES(?,?,?,?,?,?,?,?)').run(role,role,role,'hash','salt',role,1,Date.now());
+ const as=role=>({user:{id:role,permissions:PERMISSIONS[role]}});
+ const p=store.create({name:'شیر QA',sku:'R-QA',currency,unit_price:1500,unit_cost:800,carton_units:6,carton_price:8200,stock_milli:10000,barcodes:[]});
+ const cash=openCash(store),adjustments=openCashAdjustments(store);
+ store.attachSaleCashHook((actor,r)=>cash.recordSale(actor,r));
+ const shift=cash.open(as('owner'),{request_id:randomUUID(),currency,opening_amount:5000}).shift;
+ const sale=store.sell({request_id:randomUUID(),currency,received:5000,items:[{product_id:p.id,unit:'unit',quantity:2}]},'owner');
+ const make=(data={})=>({request_id:randomUUID(),currency,reason:'QA بەڵگەنامەی پشکنینی پارە',...data});
+ t.after(()=>store.close());
+ return{store,as,p,cash,adjustments,shift,sale,make};
+}
+test('full refund records immutable adjustment, exact restored stock and cash only once',t=>{
+ const f=fixture(t),session=f.as('owner');
+ assert.equal(f.store.get(f.p.id).stock_milli,8000);
+ assert.equal(f.cash.status(session).shifts[0].balance,8000);
+ const request=f.make();
+ const first=f.adjustments.refund(session,f.sale.id,request);
+ assert.equal(first.replayed,false);assert.equal(first.adjustment.amount,-3000);
+ assert.equal(f.store.get(f.p.id).stock_milli,10000);
+ assert.equal(f.cash.status(session).shifts[0].balance,5000);
+ assert.equal(f.adjustments.refund(session,f.sale.id,request).replayed,true);
+ assert.equal(f.store.get(f.p.id).stock_milli,10000);
+ assert.equal(f.store.db.prepare('SELECT count(*) n FROM cash_adjustments').get().n,1);
+ assert.equal(f.store.db.prepare('SELECT count(*) n FROM refund_stock_ledger').get().n,1);
+ assert.throws(()=>f.adjustments.refund(session,f.sale.id,f.make()),e=>e.status===409);
+ assert.throws(()=>f.adjustments.refund(f.as('cashier'),f.sale.id,f.make()),e=>e.status===403);
+ assert.throws(()=>f.adjustments.refund(session,f.sale.id,{...request,reason:'another reason'}),e=>e.status===409);
+ assert.throws(()=>f.store.db.exec('UPDATE cash_adjustments SET amount=-1'),/immutable cash adjustment/);
+ assert.throws(()=>f.store.db.exec('DELETE FROM refund_stock_ledger'),/immutable refund stock ledger/);
+ assert.equal(reconcile(f.store.db).ok,true,JSON.stringify(reconcile(f.store.db).failures));
+});
+test('expense posts only with managed cash shift, idempotently and exact IQD/USD integer units',t=>{
+ const f=fixture(t,{currency:'USD'}),owner=f.as('owner'),req=f.make({amount:125});
+ const a=f.adjustments.expense(owner,req);assert.equal(a.adjustment.amount,-125);
+ assert.equal(f.adjustments.expense(owner,req).replayed,true);
+ assert.equal(f.cash.status(owner).shifts[0].balance,7875);
+ assert.equal(reconcile(f.store.db).ok,true,JSON.stringify(reconcile(f.store.db).failures));
+ assert.throws(()=>f.adjustments.expense(owner,f.make({amount:9999999})),e=>e.status===409);
+ assert.throws(()=>f.adjustments.expense(owner,f.make({amount:0})));
+ assert.throws(()=>f.adjustments.expense(owner,f.make({amount:1.5})));
+ assert.throws(()=>f.adjustments.expense(owner,{...req,amount:500}),e=>e.status===409);
+ assert.throws(()=>f.adjustments.expense(f.as('cashier'),f.make({amount:1})),e=>e.status===403);
+});
+test('failure injected before commit rolls back cash, stock, audit and adjustment journals',t=>{
+ const f=fixture(t),owner=f.as('owner'),starting=f.cash.status(owner).shifts[0].balance,stock=f.store.get(f.p.id).stock_milli;
+ const before=f.store.db.prepare('SELECT count(*) n FROM access_audit').get().n;
+ assert.throws(()=>f.adjustments.refund(owner,f.sale.id,f.make(),()=>{throw Error('simulated power outage');}),/power outage/);
+ assert.equal(f.cash.status(owner).shifts[0].balance,starting);
+ assert.equal(f.store.get(f.p.id).stock_milli,stock);
+ assert.equal(f.store.db.prepare('SELECT count(*) n FROM cash_adjustments').get().n,0);
+ assert.equal(f.store.db.prepare('SELECT count(*) n FROM refund_stock_ledger').get().n,0);
+ assert.equal(f.store.db.prepare('SELECT count(*) n FROM access_audit').get().n,before);
+ assert.equal(reconcile(f.store.db).ok,true);
+});
+test('reconciliation detects refund stock tampering, mismatched refunds, expenses and drawer balance',t=>{
+ const f=fixture(t),owner=f.as('owner');
+ const a=f.adjustments.refund(owner,f.sale.id,f.make());
+ f.adjustments.expense(owner,f.make({amount:200}));
+ assert.equal(reconcile(f.store.db).ok,true);
+ assert.equal(f.cash.status(owner).shifts[0].balance,4800);
+ f.store.db.exec('DROP TRIGGER refund_stock_no_update');
+ f.store.db.prepare('UPDATE refund_stock_ledger SET delta_milli=1 WHERE adjustment_id=?').run(a.adjustment.id);
+ assert.equal(reconcile(f.store.db).ok,false);
+ assert.ok(reconcile(f.store.db).failures.refund_movements>0);
+});
+test('closed shift prevents new expense and refund while preserving retry acknowledgements',t=>{
+ const f=fixture(t),owner=f.as('owner'),req=f.make({amount:200});
+ const posted=f.adjustments.expense(owner,req);
+ f.cash.close(owner,f.shift.id,{request_id:randomUUID(),counted_amount:7800});
+ assert.equal(f.adjustments.expense(owner,req).replayed,true);
+ assert.equal(posted.adjustment.id,f.adjustments.expense(owner,req).adjustment.id);
+ assert.throws(()=>f.adjustments.expense(owner,f.make({amount:50})),e=>e.status===409);
+ assert.throws(()=>f.adjustments.refund(owner,f.sale.id,f.make()),e=>e.status===409);
+ assert.equal(reconcile(f.store.db).ok,true);
+});

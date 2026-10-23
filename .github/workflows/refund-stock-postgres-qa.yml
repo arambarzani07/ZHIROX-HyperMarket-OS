@@ -1,0 +1,71 @@
+name: ZHIROX Refund Stock PostgreSQL QA (isolated)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/refund-stock-sync-staging.sql'
+      - 'supabase/tests/refund-stock-sync.sql'
+      - 'supabase/refund-capability-parity-staging.sql'
+      - 'supabase/tests/refund-capability-parity.sql'
+      - 'supabase/schema.sql'
+      - 'supabase/harden-sync.sql'
+      - 'supabase/purchases-sync.sql'
+      - '.github/workflows/refund-stock-postgres-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refund-stock-sql-qa:
+    name: PostgreSQL 17 refund stock only / rollback
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: qa-only-temporary
+          POSTGRES_DB: zhirox_synthetic_qa
+        options: >-
+          --health-cmd "pg_isready -U postgres -d zhirox_synthetic_qa"
+          --health-interval 5s --health-timeout 3s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify isolated ephemeral PostgreSQL only
+        shell: bash
+        env:
+          PG_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          set -euo pipefail
+          test -n "$PG_CONTAINER"
+          docker exec "$PG_CONTAINER" psql -U postgres -d zhirox_synthetic_qa -v ON_ERROR_STOP=1 -c \
+            "create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;"
+          for sql in \
+            supabase/schema.sql \
+            supabase/harden-sync.sql \
+            supabase/purchases-sync.sql \
+            supabase/refund-stock-sync-staging.sql \
+            supabase/refund-capability-parity-staging.sql \
+            supabase/tests/refund-stock-sync.sql \
+            supabase/tests/refund-capability-parity.sql
+          do
+            echo "Synthetic-only PostgreSQL SQL QA: $sql"
+            docker exec -i "$PG_CONTAINER" psql -X -U postgres -d zhirox_synthetic_qa -v ON_ERROR_STOP=1 < "$sql"
+          done
+          # Transaction-only SQL QA must NOT leave a single refund or market row.
+          test "$(docker exec "$PG_CONTAINER" psql -X -U postgres -d zhirox_synthetic_qa -At -c \
+            "select count(*) from public.zhirox_refund_stock_documents;")" = 0
+          test "$(docker exec "$PG_CONTAINER" psql -X -U postgres -d zhirox_synthetic_qa -At -c \
+            "select count(*) from public.zhirox_refund_stock_movements;")" = 0
+          test "$(docker exec "$PG_CONTAINER" psql -X -U postgres -d zhirox_synthetic_qa -At -c \
+            "select count(*) from public.zhirox_markets;")" = 0
+          echo "PASS: ephemeral PostgreSQL staging contract tests, all sample rows rolled back."
+      - name: Failure-only database diagnostics
+        if: failure()
+        env:
+          PG_CONTAINER: ${{ job.services.postgres.id }}
+        shell: bash
+        run: |
+          if [ -n "$PG_CONTAINER" ]; then docker logs --tail 90 "$PG_CONTAINER" || true; fi
