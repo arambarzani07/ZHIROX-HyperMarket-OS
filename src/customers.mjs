@@ -60,6 +60,14 @@ export function openCustomers(store){
    const after={name:edit.name??before.name,phone:edit.phone??before.phone,credit_limit:edit.credit_limit??before.credit_limit,active:edit.active??before.active};
    const changed=Object.keys(after).filter(k=>after[k]!==before[k]);
    if(!changed.length)return{customer:show(before,session),unchanged:true};
+   // Credit limit is a HARD ceiling once an immutable debt ledger exists.
+   // A lower limit may not strand a customer below already posted debt.
+   if(changed.includes('credit_limit')&&db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='customer_debt_balances'").get()){
+    const cached=db.prepare('SELECT balance,currency FROM customer_debt_balances WHERE customer_id=?').get(id);
+    const latest=db.prepare('SELECT balance_after,currency FROM customer_debt_ledger WHERE customer_id=? ORDER BY rowid DESC LIMIT 1').get(id);
+    check(!((cached&&!latest)||(latest&&!cached)||(cached&&latest&&(cached.balance!==latest.balance_after||cached.currency!==latest.currency||cached.currency!==before.currency))), 'هەڵەی هاوسەنگیی Ledger ـی قەرز؛ گۆڕینی سنوور ڕاگیرا',409);
+    check(after.credit_limit>=(cached?.balance||0),'سنووری نوێ نابێت لە قەرزی ماوە کەمتر بێت',409);
+   }
    const at=new Date().toISOString();
    const res=db.prepare('UPDATE customers SET name=?,phone=?,credit_limit=?,active=?,revision=revision+1,updated_at=? WHERE id=? AND revision=?').run(after.name,after.phone,after.credit_limit,after.active,at,id,before.revision);
    check(res.changes===1,'کڕیار لە کاتی دەستکاری گۆڕاوە',409);
