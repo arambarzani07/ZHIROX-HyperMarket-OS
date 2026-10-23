@@ -1,6 +1,7 @@
 import {openSuppliers} from './suppliers.mjs';
 import {openCustomers} from './customers.mjs';
 import {openDebt} from './debt.mjs';
+import {auditDebtLedger} from './debt-integrity.mjs';
 import {openPurchasePreview} from './purchase-preview.mjs';
 import {openPurchases} from './purchases.mjs';
 import {openCash} from './cash.mjs';
@@ -32,6 +33,10 @@ const dataDir=resolveDataDirectory();await mkdir(dataDir,{recursive:true});const
 const suppliers=openSuppliers(store);
 const customers=openCustomers(store);
 const debt=openDebt(store);
+// Startup protects even historical/middle entries, not only the latest cache.
+// Audit is strictly read-only and aborts the new ZHIROX service on mismatch.
+const initialDebtIntegrity=auditDebtLedger(store.db);
+if(!initialDebtIntegrity.ok)throw new Error('Customer debt ledger protection: full historical reconciliation failed; startup blocked, no auto-repair');
 // Manual customer credit/repayment posting is separately locked OFF by default.
 const debtPostingEnabled=process.env.ZHIROX_DEBT_POSTING==='enabled';
 const cash=openCash(store);
@@ -177,6 +182,10 @@ const server=createServer(async(req,res)=>{res.setHeader('X-Content-Type-Options
   auth.requirePermission(session,'customers.write');
   const input=await body(req),fresh=freshMutation('customers.write');
   return json(res,200,customers.update(fresh,customerPath[1],input));
+ }
+ if(url.pathname==='/api/debt/integrity'&&req.method==='GET'){
+  auth.requirePermission(session,'debt.read');
+  return json(res,200,auditDebtLedger(store.db));
  }
  if(url.pathname==='/api/debt/config'&&req.method==='GET'){
   auth.requirePermission(session,'debt.read');
