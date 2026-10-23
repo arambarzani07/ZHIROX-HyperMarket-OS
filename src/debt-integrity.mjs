@@ -48,7 +48,7 @@ export function auditDebtLedger(db,{customer_id=null}={}){
    !isMoney(entry.amount,true)||expectedDelta===null||
    entry.delta!==expectedDelta||typeof entry.note!=='string'||
    entry.note.trim().length<3||entry.note.trim().length>300||
-   typeof entry.created_at!=='string'||!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/.test(entry.created_at)){
+   typeof entry.created_at!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(entry.created_at)){
    failures.invalid_entry++;
   }
   const old=running.get(c.id)??0n;
