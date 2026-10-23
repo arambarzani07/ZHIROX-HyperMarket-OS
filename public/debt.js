@@ -140,7 +140,7 @@ async function send(){
   if(g!==gen||!current())return;
   const id=pending.customer_id;pending=null;posting=false;
   await choose(id);
-  if(g===gen&&current())notice(response.replayed?'هەمان داواکاری پشتڕاست کرایەوە؛ دوبارە تۆمار نەکرا.':'مامەڵەکە لە Ledger ـی کڕیار تۆمار کرا.');
+  if(g===gen&&current())notice(response.replayed?'هەمان داواکاری پشتڕاست کرایەوە؛ دووبارە تۆمار نەکرا.':'مامەڵەکە لە Ledger ـی کڕیار تۆمار کرا.');
  }catch(e){
   if(e.responseReceived&&e.status>=400&&e.status<500)pending=null;
   if(g===gen&&current()){notice(e.message||'ئەنجامی داواکاری نادیارە؛ دووبارە پشکنینی هەمان داواکاری بکە.',true);}
