@@ -1,5 +1,6 @@
 import {openSuppliers} from './suppliers.mjs';
 import {openCustomers} from './customers.mjs';
+import {openDebt} from './debt.mjs';
 import {openPurchasePreview} from './purchase-preview.mjs';
 import {openPurchases} from './purchases.mjs';
 import {openCash} from './cash.mjs';
@@ -30,6 +31,9 @@ if(!['127.0.0.1','localhost'].includes(host)&&process.env.ZHIROX_PREVIEW!=='1')t
 const dataDir=resolveDataDirectory();await mkdir(dataDir,{recursive:true});const store=openStore(join(dataDir,'zhirox.sqlite'));const auth=openAuth(store.db);const checkout=openCheckout(store);const receipts=openReceipts(store);const inventory=openInventory(store);const reports=openReports(store);const backups=openBackups(join(dataDir,'backups'));
 const suppliers=openSuppliers(store);
 const customers=openCustomers(store);
+const debt=openDebt(store);
+// Manual customer credit/repayment posting is separately locked OFF by default.
+const debtPostingEnabled=process.env.ZHIROX_DEBT_POSTING==='enabled';
 const cash=openCash(store);
 const adjustments=openCashAdjustments(store);
 const cashAccountingEnabled=process.env.ZHIROX_CASH_ACCOUNTING==='enabled';
@@ -173,6 +177,21 @@ const server=createServer(async(req,res)=>{res.setHeader('X-Content-Type-Options
   auth.requirePermission(session,'customers.write');
   const input=await body(req),fresh=freshMutation('customers.write');
   return json(res,200,customers.update(fresh,customerPath[1],input));
+ }
+ if(url.pathname==='/api/debt/config'&&req.method==='GET'){
+  auth.requirePermission(session,'debt.read');
+  return json(res,200,{posting_enabled:debtPostingEnabled,currency_units:{IQD:'dinar',USD:'cent'},
+   local_only:true,linked_to_sales:false,linked_to_cash_shift:false});
+ }
+ const debtPath=url.pathname.match(/^\/api\/debt\/customers\/([0-9a-f-]{36})$/i);
+ if(debtPath&&req.method==='GET')
+  return json(res,200,debt.list(session,debtPath[1],Object.fromEntries(url.searchParams)));
+ const postingPath=url.pathname.match(/^\/api\/debt\/customers\/([0-9a-f-]{36})\/entries$/i);
+ if(postingPath&&req.method==='POST'){
+  auth.requirePermission(session,'debt.post');
+  if(!debtPostingEnabled)throw new DomainError('تۆمارکردنی قەرز و پارەدانەوە هێشتا قوفڵە؛ تەنها QA و بە مۆڵەتی تایبەت دەکرێت',409);
+  const input=await body(req),fresh=freshMutation('debt.post');
+  return json(res,201,debt.post(fresh,postingPath[1],input));
  }
  if(url.pathname==='/api/suppliers'&&req.method==='GET')return json(res,200,suppliers.list(session,Object.fromEntries(url.searchParams)));
  if(url.pathname==='/api/suppliers'&&req.method==='POST'){auth.requirePermission(session,'suppliers.write');const input=await body(req),fresh=auth.session(token);auth.requirePermission(fresh,'suppliers.write');if(req.headers['x-zhirox-csrf']!==fresh.csrf)throw new DomainError('دانیشتن گۆڕاوە',403);return json(res,201,suppliers.create(fresh,input));}
