@@ -4,12 +4,8 @@ import { DomainError } from './store.mjs';
 const scrypt=promisify(scryptCallback);
 const HASH_OPTIONS={N:32768,r:8,p:3,maxmem:64*1024*1024};
 const SESSION_MS=12*60*60*1000;
-export const PERMISSIONS=Object.freeze({
- owner:['customers.read','customers.write','debt.read','debt.post','cash.read','cash.manage','purchases.preview','purchases.create','suppliers.read','suppliers.write','products.read','products.write','products.export','sales.create','receipts.all','reports.read','backup.create','sync.manage','team.manage','audit.read'],
- manager:['customers.read','customers.write','debt.read','debt.post','cash.read','cash.manage','purchases.preview','purchases.create','suppliers.read','suppliers.write','products.read','products.write','products.export','sales.create','receipts.all','reports.read','audit.read'],
- cashier:['customers.read','cash.read','products.read','sales.create','receipts.own'],
- warehouse:['suppliers.read','products.read','products.write','products.export']
-});
+import {PERMISSIONS} from './permissions.mjs';
+export {PERMISSIONS} from './permissions.mjs';
 const fail=(message,status=400)=>{throw new DomainError(message,status);};
 const digest=value=>createHash('sha256').update(value).digest('hex');
 function username(value){if(typeof value!=='string'||!/^[A-Za-z0-9._-]{3,40}$/.test(value))fail('ناوی چوونەژوورەوە: ٣ تا ٤٠ پیتی ئینگلیزی یان ژمارە');return value.toLowerCase();}

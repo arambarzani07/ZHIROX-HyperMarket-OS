@@ -10,7 +10,7 @@ The RPC implements paged customer search/get/create/update and immutable custome
 
 These are **manual debt records**, not credit sales or cash-shift-backed repayments. Product/stock, sale, receipt, shift, expense/refund and purchase posting on the hosted backend are not implemented here. Existing local modules continue on the original SQLite branch.
 
-`src/web-customer-client.mjs` is a server-only transport with exact project allowlist, hashed session tokens, bounded input, timeout, no redirects, sanitized errors and no automatic retry with a new request ID. It requires server environment variables `ZHIROX_WEB_PROJECT_REF`, `SUPABASE_URL` and **`SUPABASE_SECRET_KEY`** (`sb_secret_...`). It sends the secret in the API-key header only, never as a browser key or source credential. It is NOT yet wired into a Vercel request handler. Its local tests mock transport; they do not prove a live HTTP deployment.
+`src/web-customer-client.mjs` is a server-only transport with exact project allowlist, hashed session tokens, bounded input, timeout, no redirects, sanitized errors and no automatic retry with a new request ID. It requires server environment variables `ZHIROX_WEB_PROJECT_REF`, `SUPABASE_URL` and **`SUPABASE_SECRET_KEY`** (`sb_secret_...`). It sends the secret in the API-key header only, never as a browser key or source credential. It is now connected through `src/web-http.mjs` and `api/index.js`; see `WEB_AUTH_BACKEND.md` for current configuration and release boundaries. Its local tests mock transport; they do not prove a live HTTP deployment.
 
 ## Actual database verification
 
@@ -20,10 +20,10 @@ Security advisors reported only INFO `rls_enabled_no_policy`, including the eigh
 
 ## Remaining work before a real Vercel release
 
-- Implement the hosted auth lifecycle, owner activation and account/session administration with revocation locking. No public first-owner setup or default password may be exposed.
+- Hosted auth, owner activation and account/session administration are implemented and PostgreSQL-tested; owner activation and a real hosted HTTP acceptance test are still pending. See `WEB_AUTH_BACKEND.md`.
 - Provision the server secret directly into protected Vercel environment settings; no secret was retrieved, printed or saved in this work.
 - Implement and verify the remaining hosted business operations with atomic stock/cash/receipt behavior and restart-safe replay.
-- Wire the existing approved UI to the hosted API with HTTPS origin checks, Secure HttpOnly session cookies, CSRF and per-route RBAC.
+- Auth/customer/debt UI/API integration has exact HTTPS origin checks, Secure HttpOnly cookies, CSRF and live-session SQL RBAC. Finish wiring the remaining business modules and verify the deployed browser journey.
 - Verify durable backup/recovery and source/runtime rollback boundaries before calling it production-ready.
 - Deploy the correct migration branch and test the entire real HTTP journey, then report the actual URL/status. There is currently **no new Vercel deployment or hosted login URL**.
 
