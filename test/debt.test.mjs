@@ -36,7 +36,7 @@ test('ledger begins empty and QA-only manual credit is never a cash or cloud sal
  post(f,c.id,'debt',3000);
  assert.equal(f.debt.summary(f.user('owner'),c.id).balance,3000);
  assert.equal(f.debt.summary(f.user('owner'),c.id).posting_requires_cash_confirmation,true);
- assert.equal(f.store.db.prepare('SELECT count(*) n FROM cash_shifts').get().n,0);
+ assert.equal(f.store.db.prepare("SELECT count(*) n FROM sqlite_schema WHERE type='table' AND name='cash_shifts'").get().n,0);
  assert.equal(f.store.db.prepare('SELECT count(*) n FROM sales').get().n,0);
  assert.deepEqual(f.store.summary(),before);
 });
