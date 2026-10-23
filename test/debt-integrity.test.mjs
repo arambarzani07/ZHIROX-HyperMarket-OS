@@ -77,6 +77,7 @@ test('tampering in an older ledger entry is found even when latest row and cache
  assert.equal(f.check().ok,false);
  assert.ok(f.check().failures.sequence>0);
  assert.throws(()=>f.debt.summary(f.owner,c.id),e=>e.status===409);
+ assert.throws(()=>f.customers.update(f.owner,c.id,{revision:1,credit_limit:8000}),e=>e.status===409);
  const before=f.store.db.prepare('SELECT COUNT(*) AS n FROM customer_debt_ledger').get().n;
  assert.throws(()=>f.post(c,'debt',100),e=>e.status===409);
  assert.equal(f.store.db.prepare('SELECT COUNT(*) AS n FROM customer_debt_ledger').get().n,before);
