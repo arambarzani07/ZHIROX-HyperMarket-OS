@@ -32,13 +32,16 @@ export function auditDebtLedger(db,{customer_id=null}={}){
   (selective?' WHERE id=?':''),...(selective?[customer_id]:[]));
  const cache=read(db,'SELECT customer_id,currency,balance FROM customer_debt_balances'+
   (selective?' WHERE customer_id=?':''),...(selective?[customer_id]:[]));
- const lines=read(db,'SELECT id,request_id,customer_id,actor_id,kind,currency,amount,delta,balance_after,note,created_at FROM customer_debt_ledger'+
-  (selective?' WHERE customer_id=?':'')+' ORDER BY rowid',...(selective?[customer_id]:[]));
+ const ledgerStatement=db.prepare('SELECT id,request_id,customer_id,actor_id,kind,currency,amount,delta,balance_after,note,created_at FROM customer_debt_ledger'+
+  (selective?' WHERE customer_id=?':'')+' ORDER BY rowid');
+ ledgerStatement.setReadBigInts(true);
  const known=new Map(customers.map(row=>[row.id,row]));
  const balances=new Map(cache.map(row=>[row.customer_id,row]));
  const running=new Map(),counts=new Map();
+ let entryCount=0;
  if(selective&&!customers.length)failures.unknown_customer++;
- for(const entry of lines){
+ for(const entry of ledgerStatement.iterate(...(selective?[customer_id]:[]))){
+  entryCount++;
   const c=known.get(entry.customer_id);
   if(!c){failures.unknown_customer++;continue;}
   if(!users.has(entry.actor_id))failures.unknown_actor++;
@@ -75,6 +78,6 @@ export function auditDebtLedger(db,{customer_id=null}={}){
  }
  const ok=Object.values(failures).every(x=>x===0);
  return{schema:1,ok,scope:selective?'customer':'all',
-  customers:customers.length,entries:lines.length,balances:cache.length,
+  customers:customers.length,entries:entryCount,balances:cache.length,
   failures,repair_performed:false,db_writes:0};
 }
