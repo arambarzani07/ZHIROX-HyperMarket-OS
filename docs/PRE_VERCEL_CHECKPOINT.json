@@ -1,0 +1,19 @@
+{
+  "checkpoint_date": "2026-10-23",
+  "source_commit": "1c74a3c38668e1c5f044d574ab159a74823b6440",
+  "source_tree": "c7bcd41db4a025cb061f4788fa8846fcf25a5d91",
+  "checkpoint_branch": "checkpoint/pre-vercel-2026-10-23",
+  "migration_branch": "feat/vercel-persistent-backend",
+  "approved_design_sha256": "9e4bcf0ad573feaff6c1dcf88cd08ad3341c8376e318d94d9a51430f8efa9632",
+  "runtime": "Node.js >=24",
+  "operational_storage": "local SQLite",
+  "runtime_database_snapshot": "not_available_in_this_workspace",
+  "runtime_configuration_snapshot": "not_available_in_this_workspace",
+  "cloud_migration_applied": false,
+  "vercel_deployed": false,
+  "baseline_validation": {
+    "passed": 281,
+    "failed": 0,
+    "skipped": 1
+  }
+}

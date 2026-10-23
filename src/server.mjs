@@ -24,6 +24,9 @@ import {openReceipts} from './receipts.mjs';
 import {openCheckout} from './checkout.mjs';
 import { openAuth } from './auth.mjs';
 import { openSync,readSyncConfig } from './sync.mjs';
+// This SQLite entrypoint must never accept writes on ephemeral Vercel storage.
+// A separately implemented persistent backend is required before deployment.
+if(process.env.VERCEL==='1')throw new Error('ZHIROX_VERCEL_PERSISTENT_BACKEND_REQUIRED: local SQLite server cannot run on Vercel');
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const port=Number(process.env.PORT||3187),host=process.env.ZHIROX_BIND||'127.0.0.1';
 if(!Number.isInteger(port)||port<1||port>65535)throw new Error('Invalid port');
