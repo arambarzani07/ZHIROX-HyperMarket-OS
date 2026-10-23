@@ -20,7 +20,7 @@ const current=()=>window.zhiroxCurrentPage==='debt';
 const canRead=()=>window.zhiroxAuth?.can('debt.read')===true;
 const canPost=()=>window.zhiroxAuth?.can('debt.post')===true;
 let gen=0,customers=[],after=null,search='',selectedId=null,ledger=null,entries=[],before=null;
-let locked=true,reading=false,posting=false,pending=null;
+let locked=true,reading=false,posting=false,pending=null,targetCustomer=null;
 const notice=(msg,error=false)=>{
  const holder=q('#debt-notice');
  if(holder){holder.textContent=msg;holder.setAttribute('role',error?'alert':'status');}
@@ -94,6 +94,7 @@ function render(){
   locked=config.posting_enabled!==true;
   customers=list.customers||[];after=list.next_after||null;
   paintCustomers();paintLedger();
+  if(targetCustomer){const next=targetCustomer;targetCustomer=null;void choose(next);}
  }).catch(e=>{if(g===gen&&current())notice(e.message,true);});
 }
 async function searchCustomers(more=false){
@@ -145,8 +146,13 @@ async function send(){
   if(g===gen&&current()){notice(e.message||'ئەنجامی داواکاری نادیارە؛ دووبارە پشکنینی هەمان داواکاری بکە.',true);}
  }finally{posting=false;if(g===gen&&current())paintLedger();}
 }
+function openCustomer(id){
+ if(typeof id!=='string'||! /^[0-9a-f-]{36}$/i.test(id)||!canRead())return;
+ targetCustomer=id;
+ window.zhiroxNavigate?.('debt');
+}
 function leave(){gen++;reading=false;posting=false;customers=[];after=null;selectedId=null;ledger=null;entries=[];before=null;}
-function clear(){leave();pending=null;locked=true;search='';}
+function clear(){leave();pending=null;locked=true;search='';targetCustomer=null;}
 root.addEventListener('submit',e=>{
  if(e.target?.id==='debt-customer-search'){
   e.preventDefault();if(reading)return;
@@ -181,5 +187,5 @@ root.addEventListener('click',e=>{
  if(button.id==='debt-more-entries'&&!reading)void older();
  if(button.id==='debt-retry'&&pending&&!posting)void send();
 });
-window.zhiroxDebt={render,leave,clear};
+window.zhiroxDebt={render,leave,clear,openCustomer};
 })();
