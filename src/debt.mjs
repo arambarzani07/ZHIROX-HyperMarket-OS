@@ -30,7 +30,7 @@ export function openDebt(store){
  function balance(id,currency){
   const cache=db.prepare('SELECT currency,balance FROM customer_debt_balances WHERE customer_id=?').get(id);
   const last=db.prepare('SELECT currency,balance_after FROM customer_debt_ledger WHERE customer_id=? ORDER BY rowid DESC LIMIT 1').get(id);
-  if((cache&&!last)||(last&&!cache)||cache?.currency!==currency||last?.currency!==currency||cache&&last&&cache.balance!==last.balance_after)
+  if((cache&&!last)||(last&&!cache)||(cache&&cache.currency!==currency)||(last&&last.currency!==currency)||(cache&&last&&cache.balance!==last.balance_after))
    throw new DomainError('هاوسەنگیی Ledger و Balance ـی قەرز نایەکسانە؛ کردار ڕاگیرا',409);
   return cache?.balance??0;
  }
