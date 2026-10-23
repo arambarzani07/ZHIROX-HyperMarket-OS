@@ -1,6 +1,7 @@
 // Customer registry lives in local SQLite only. No debt postings, cloud or old POS writes.
 import {randomUUID} from 'node:crypto';
 import {DomainError} from './store.mjs';
+import {auditDebtLedger} from './debt-integrity.mjs';
 const check=(ok,msg,status=400)=>{if(!ok)throw new DomainError(msg,status);};
 const allowed=(obj,fields)=>check(obj&&typeof obj==='object'&&!Array.isArray(obj)&&Object.keys(obj).every(k=>fields.includes(k)),'داواکاری یان خانە نادروستە');
 const uid=x=>typeof x==='string'&&/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(x);
@@ -63,6 +64,8 @@ export function openCustomers(store){
    // Credit limit is a HARD ceiling once an immutable debt ledger exists.
    // A lower limit may not strand a customer below already posted debt.
    if(changed.includes('credit_limit')&&db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='customer_debt_balances'").get()){
+    const inspected=auditDebtLedger(db,{customer_id:id});
+    check(inspected.ok,'مێژووی Ledger ـی قەرز هاوسەنگ نییە؛ گۆڕینی سنوور ڕاگیرا',409);
     const cached=db.prepare('SELECT balance,currency FROM customer_debt_balances WHERE customer_id=?').get(id);
     const latest=db.prepare('SELECT balance_after,currency FROM customer_debt_ledger WHERE customer_id=? ORDER BY rowid DESC LIMIT 1').get(id);
     check(!((cached&&!latest)||(latest&&!cached)||(cached&&latest&&(cached.balance!==latest.balance_after||cached.currency!==latest.currency||cached.currency!==before.currency))), 'هەڵەی هاوسەنگیی Ledger ـی قەرز؛ گۆڕینی سنوور ڕاگیرا',409);
