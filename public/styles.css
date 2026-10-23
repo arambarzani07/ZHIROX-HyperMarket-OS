@@ -1,4 +1,19 @@
 
+#hyper-cards .debt-layout{display:grid;grid-template-columns:minmax(220px,0.33fr) minmax(0,1fr);gap:15px;align-items:start}
+#hyper-cards .debt-customer-row{width:100%;display:flex;justify-content:space-between;gap:10px;margin:6px 0;text-align:right}
+#hyper-cards .debt-customer-row[aria-current=page]{border-color:var(--green);background:var(--soft)}
+#hyper-cards .debt-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:15px 0}
+#hyper-cards .debt-summary>div{display:grid;gap:3px;padding:14px 11px;background:var(--soft);border:1px solid var(--line);border-radius:12px}
+#hyper-cards .debt-summary span{font-size:11px;color:var(--muted)}
+#hyper-cards .debt-summary strong{font-size:15px;overflow-wrap:anywhere}
+#hyper-cards .debt-chat{display:grid;gap:9px}
+#hyper-cards .debt-line{border:1px solid var(--line);padding:13px;border-radius:13px;background:var(--surface);max-width:90%;overflow-wrap:anywhere}
+#hyper-cards .debt-line-charge{justify-self:start;border-inline-start:4px solid var(--gold)}
+#hyper-cards .debt-line-payment{justify-self:end;border-inline-end:4px solid var(--green)}
+#hyper-cards .debt-line-title{font-weight:600}
+#hyper-cards .debt-line p{margin:4px 0}
+#hyper-cards .debt-line small{color:var(--muted)}
+@media(max-width:760px){#hyper-cards .debt-layout{grid-template-columns:1fr}#hyper-cards .debt-summary{grid-template-columns:1fr 1fr}}
 #hyper-cards{color-scheme:light dark;--bg:light-dark(#f1f4fa,#111c2d);--surface:light-dark(#ffffff,#1e2e44);--text:light-dark(#1b304e,#eaf2ff);--muted:light-dark(#586e8c,#b2c6e0);--line:light-dark(#dce5f0,#3a506c);--green:light-dark(#325bd1,#bed1ff);--on:light-dark(#fff,#152d61);--soft:light-dark(#ebf0ff,#2a4168);--gold:light-dark(#925d20,#edc68e);--goldbg:light-dark(#fff1db,#493823);--blue:light-dark(#246c9b,#9ed8ff);--bluebg:light-dark(#e7f4ff,#203f5c);--purple:light-dark(#8058b7,#d7b8ff);--purplebg:light-dark(#f3ebff,#3d2d55);font:14px/1.8 Tahoma,Arial,sans-serif;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:22px;overflow:hidden}
 #hyper-cards *{box-sizing:border-box}#hyper-cards button,#hyper-cards input,#hyper-cards select{font:inherit;color:inherit}#hyper-cards button{cursor:pointer;min-height:44px}#hyper-cards button:focus-visible,#hyper-cards input:focus-visible,#hyper-cards select:focus-visible{outline:2px solid var(--green);outline-offset:3px}#hyper-cards button:disabled{opacity:.45;cursor:default}#hyper-cards [hidden]{display:none!important}#hyper-cards svg{width:18px;height:18px;flex-shrink:0}#hyper-cards strong,#hyper-cards b{font-weight:500}#hyper-cards .sub{font-size:12px;color:var(--muted)}#hyper-cards .eyebrow{font-size:11px;color:var(--green)}
 #hyper-cards .focus-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:var(--surface);padding:18px 24px;border-bottom:1px solid var(--line)}#hyper-cards .focus-toolbar>div:first-child{display:grid;gap:1px}#hyper-cards .focus-toolbar strong{font-size:16px}#hyper-cards .focus-switch{display:flex;gap:4px;background:var(--bg);padding:4px;border:1px solid var(--line);border-radius:22px}#hyper-cards .focus-switch button{background:transparent;border:0;border-radius:18px;padding:5px 17px;font-size:12px;min-height:35px}#hyper-cards .focus-switch button[aria-pressed=true]{background:var(--green);color:var(--on)}
