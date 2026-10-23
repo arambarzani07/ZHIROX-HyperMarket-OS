@@ -4,6 +4,7 @@
 // HTTP mutation is independently gated OFF by default in src/server.mjs.
 import {randomUUID} from 'node:crypto';
 import {DomainError} from './store.mjs';
+import {auditDebtLedger} from './debt-integrity.mjs';
 
 const requireValue=(yes,message,status=400)=>{if(!yes)throw new DomainError(message,status);};
 const uuid=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
@@ -28,6 +29,11 @@ export function openDebt(store){
   return c;
  }
  function balance(id,currency){
+  // Recompute EVERY immutable ledger entry for this customer before trusting
+  // either a cached balance or the last entry. Corruption in an older entry
+  // must not be hidden by an unchanged latest row/cache pair.
+  const integrity=auditDebtLedger(db,{customer_id:id});
+  if(!integrity.ok)throw new DomainError('مێژووی Ledger ـی قەرز هاوسەنگ نییە؛ هەموو کردارەکان ڕاگیراون',409);
   const cache=db.prepare('SELECT currency,balance FROM customer_debt_balances WHERE customer_id=?').get(id);
   const last=db.prepare('SELECT currency,balance_after FROM customer_debt_ledger WHERE customer_id=? ORDER BY rowid DESC LIMIT 1').get(id);
   if((cache&&!last)||(last&&!cache)||(cache&&cache.currency!==currency)||(last&&last.currency!==currency)||(cache&&last&&cache.balance!==last.balance_after))
