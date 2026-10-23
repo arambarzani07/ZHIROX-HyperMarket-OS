@@ -47,7 +47,8 @@
     detail.innerHTML='<section class="panel"><h3>'+esc(c.name)+'</h3>'+
      '<p>کۆدی نەگۆڕ: <strong>'+esc(c.code)+'</strong> · دراوی نەگۆڕ: '+esc(c.currency)+'</p>'+
      '<p class="sub">وەشانی تۆمار: '+esc(c.revision)+' · دۆخ: '+(c.active?'چالاک':'ڕاگیراو')+'</p>'+fields+
-     '<p class="sub">سنووری کڕیار تەنها زانیارییە؛ قەرز و پارەدانەوە هێشتا لە Ledger بەکارهاتوو نییە.</p></section>';
+     '<p class="sub">سنووری قەرز قاطعە؛ کەمکردنەوەی سنوور لە خوار باڵانسی ماوە ڕەت دەکرێتەوە. تۆمارکردنی قەرز بە بنەڕەت قوفڵە.</p>'+
+     (window.zhiroxAuth?.can('debt.read')?'<button type="button" class="btn" data-customer-debt="'+esc(c.id)+'">بینینی باڵانس و مێژووی قەرز</button>':'')+'</section>';
    }
   }
   q('#hs-view').querySelectorAll('input,select,button').forEach(x=>x.disabled=busy);
@@ -104,7 +105,7 @@
    '<label>ژمارەی تەلەفۆن (ئارەزوومەندانە)<input name="phone" inputmode="tel" maxlength="19"></label>'+
    '<label>دراو<select name="currency"><option value="IQD">IQD</option><option value="USD">USD</option></select></label>'+
    '<label>سنووری هەژمار (بچووکترین یەکەی دراو)<input name="credit_limit" value="0" inputmode="numeric" required maxlength="13"></label>'+
-   '<p class="sub span">ئەم سنوورە هێشتا بۆ تۆمارکردنی قەرز چالاک نییە؛ قەرز لەم قۆناغەدا قوفڵە.</p>'+
+   '<p class="sub span">ئەم سنوورە لە Ledger ـی قەرز بە توندی جێبەجێ دەکرێت. تۆمارکردنی نوێ بە بنەڕەت قوفڵە.</p>'+
    '<button class="btn primary" type="submit">زیادکردنی کڕیار</button></form>';
   pane.scrollIntoView({block:'nearest'});
  }
@@ -170,6 +171,7 @@
   if(b.id==='customer-new')open();
   if(b.id==='customer-more'&&!busy)void load(true);
   if(b.dataset.customerId&&!busy)void show(b.dataset.customerId);
+  if(b.dataset.customerDebt&&!busy&&window.zhiroxAuth?.can('debt.read'))window.zhiroxDebt?.openCustomer?.(b.dataset.customerDebt);
   if(b.id==='customer-retry'&&pending&&!busy)void sendCreate(pending);
  });
  window.zhiroxCustomers={render,open,leave,clear};
