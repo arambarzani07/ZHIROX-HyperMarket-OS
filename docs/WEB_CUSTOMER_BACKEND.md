@@ -22,7 +22,7 @@ Security advisors reported only INFO `rls_enabled_no_policy`, including the eigh
 
 - Hosted auth, owner activation and account/session administration are implemented and PostgreSQL-tested; owner activation and a real hosted HTTP acceptance test are still pending. See `WEB_AUTH_BACKEND.md`.
 - Provision the server secret directly into protected Vercel environment settings; no secret was retrieved, printed or saved in this work.
-- Implement and verify the remaining hosted business operations with atomic stock/cash/receipt behavior and restart-safe replay.
+- Product/stock/cash/receipt/checkout source integration is implemented; finish corrected database QA and deployed acceptance. See `WEB_POS_BACKEND.md`. Other hosted business modules remain pending.
 - Auth/customer/debt UI/API integration has exact HTTPS origin checks, Secure HttpOnly cookies, CSRF and live-session SQL RBAC. Finish wiring the remaining business modules and verify the deployed browser journey.
 - Verify durable backup/recovery and source/runtime rollback boundaries before calling it production-ready.
 - Deploy the correct migration branch and test the entire real HTTP journey, then report the actual URL/status. There is currently **no new Vercel deployment or hosted login URL**.

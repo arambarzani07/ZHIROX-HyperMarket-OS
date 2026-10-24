@@ -30,3 +30,5 @@ New hosted transactions are not automatically compatible with the baseline SQLit
 - A hosted implementation must preserve atomic stock/receipt/outbox posting, exact minor-unit money, debt history, permissions and revocation checks. It also needs HTTPS origin validation, Secure session cookies, durable backups and multi-instance consistency.
 - The locked Sorani six-card / 15-section design remains unchanged. Do not replace it with a demo.
 - Target resolved after the owner accepted the recommendation: `Supermark` → `Zhirox-New-Project` (`qcfmlyyzfykzszvtllrw`). An additive, isolated hosted customer/debt migration is now applied. The original sync tables and device are preserved. No Vercel deployment has occurred; see `WEB_CUSTOMER_BACKEND.md` for exact implementation and remaining dependencies.
+
+Hosted POS foundation: additive `web_pos_atomic_checkout` migration and HTTP integration are implemented. Final database acceptance, server configuration and deployment remain pending; posting is default-off. See `WEB_POS_BACKEND.md`.

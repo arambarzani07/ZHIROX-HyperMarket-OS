@@ -7,3 +7,4 @@ async function run(request){
 export const GET=run;
 export const POST=run;
 export const PATCH=run;
+export const PUT=run;

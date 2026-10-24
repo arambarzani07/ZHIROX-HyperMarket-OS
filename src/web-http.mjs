@@ -1,3 +1,4 @@
+import {openWebPosClient} from './web-pos-client.mjs';
 import {openWebAuth} from './web-auth.mjs';
 import {openWebCustomerClient,WebCustomerError} from './web-customer-client.mjs';
 const fail=(message,status=400)=>{throw new WebCustomerError(message,status);};
@@ -6,12 +7,12 @@ const cookieName='__Host-zhirox_session';
 async function body(req){
  if(!/^application\/json(?:\s*;.*)?$/i.test(req.headers['content-type']||''))fail('جۆری داواکاری نادروستە',415);
  const parts=[];let size=0;
- for await(const part of req){size+=part.length;if(size>16384)fail('داواکاری زۆر گەورەیە',413);parts.push(part);}
+ for await(const part of req){size+=part.length;if(size>65536)fail('داواکاری زۆر گەورەیە',413);parts.push(part);}
  let value;try{value=JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{fail('داواکاری نادروستە');}
  if(!value||typeof value!=='object'||Array.isArray(value))fail('داواکاری نادروستە');return value;
 }
 function token(req){const list=(req.headers.cookie||'').split(';').map(x=>x.trim()).filter(x=>x.startsWith(cookieName+'='));return list.length===1?list[0].slice(cookieName.length+1):null;}
-export function createWebHandler({env=process.env,auth,customers}={}){
+export function createWebHandler({env=process.env,auth,customers,pos}={}){
  let origin;try{origin=new URL(env.ZHIROX_WEB_ORIGIN);if(origin.protocol!=='https:'||origin.username||origin.password||origin.origin!==env.ZHIROX_WEB_ORIGIN)throw Error();}catch{fail('ناونیشانی پارێزراوی وێب ڕێکنەخراوە',503);}
  auth??=openWebAuth({env});customers??=openWebCustomerClient({env});
  return async(req,res)=>{
@@ -23,7 +24,7 @@ export function createWebHandler({env=process.env,auth,customers}={}){
    if(req.headers.origin&&req.headers.origin!==origin.origin)fail('سەرچاوەی داواکاری ڕێگەپێدراو نییە',403);
    const method=req.method,url=new URL(req.url,origin),path=url.pathname;
    if(!path.startsWith('/api/'))fail('بەش نەدۆزرایەوە',404);
-   if(!['GET','POST','PATCH'].includes(method))fail('کردار ڕێگەپێدراو نییە',405);
+   if(!['GET','POST','PATCH','PUT'].includes(method))fail('کردار ڕێگەپێدراو نییە',405);
    if(method!=='GET'&&req.headers.origin!==origin.origin)fail('سەرچاوەی داواکاری ڕێگەپێدراو نییە',403);
    const sessionToken=token(req),csrf=req.headers['x-zhirox-csrf']||null;
    const issue=value=>{const{token:raw,...publicValue}=value;if(typeof raw!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(raw))fail('دانیشتن نادروستە',503);
@@ -32,7 +33,7 @@ export function createWebHandler({env=process.env,auth,customers}={}){
    if(path==='/api/auth/state'&&method==='GET')return send(200,await auth.state(sessionToken));
    if(path==='/api/auth/setup'&&method==='POST')return send(201,issue(await auth.setup(await body(req))));
    if(path==='/api/auth/login'&&method==='POST')return send(200,issue(await auth.login(await body(req))));
-   if(path==='/api/health'&&method==='GET'){await auth.state(null);return send(200,{ok:true,hosted:true,storage:'postgresql',implemented_modules:['auth','customers','manual-debt'],production_ready:false});}
+   if(path==='/api/health'&&method==='GET'){await auth.state(null);return send(200,{ok:true,hosted:true,storage:'postgresql',implemented_modules:['auth','customers','manual-debt','products','stock','checkout','receipts','cash'],production_ready:false});}
    // Body reads and CPU work may outlive a session. Each mutation RPC rechecks
    // live session, role and CSRF again immediately before its database writes.
    const state=await auth.state(sessionToken);if(!state.user)fail('تکایە بچۆ ژوورەوە',401);
@@ -62,6 +63,30 @@ export function createWebHandler({env=process.env,auth,customers}={}){
      if(env.ZHIROX_DEBT_POSTING!=='enabled')fail('تۆمارکردنی قەرز هێشتا قوفڵە',409);
      return send(201,await call('debt.post',debt[1],await body(req)));
     }
+   }
+   const posCall=(action,targetId=null,payload={})=>(pos??=openWebPosClient({env})).call({sessionToken,csrf,action,targetId,payload});
+   const query=()=>Object.fromEntries(url.searchParams);
+   const cashGate=()=>{if(env.ZHIROX_CASH_ACCOUNTING!=='enabled')fail('تۆمارکردنی سندوق هێشتا قوفڵە',409);};
+   const saleGate=()=>{cashGate();if(env.ZHIROX_WEB_SALES_POSTING!=='enabled')fail('تۆمارکردنی فرۆشتن هێشتا قوفڵە',409);};
+   if(['/api/catalog','/api/products'].includes(path)&&method==='GET')return send(200,await posCall('products.list',null,query()));
+   if(path==='/api/products'&&method==='POST')return send(201,await posCall('products.create',null,await body(req)));
+   if(path==='/api/pos/barcode'&&method==='GET')return send(200,await posCall('products.barcode',null,query()));
+   if(path==='/api/pos/products'&&method==='POST')return send(200,await posCall('products.ids',null,await body(req)));
+   if(path==='/api/cart'&&method==='GET')return send(200,await posCall('cart.read'));
+   if(path==='/api/cart'&&method==='PUT')return send(200,await posCall('cart.save',null,await body(req)));
+   if(path==='/api/cart/checkout'&&method==='POST'){saleGate();return send(201,await posCall('cart.checkout',null,await body(req)));}
+   if(path==='/api/sales'&&method==='POST'){saleGate();return send(201,await posCall('sales.create',null,await body(req)));}
+   if(path==='/api/cash'&&method==='GET')return send(200,{...await posCall('cash.status'),enabled:env.ZHIROX_CASH_ACCOUNTING==='enabled'});
+   if(path==='/api/cash/shifts'&&method==='POST'){cashGate();return send(201,await posCall('cash.open',null,await body(req)));}
+   if(path==='/api/receipts'&&method==='GET')return send(200,await posCall('receipts.list',null,query()));
+   if(path==='/api/inventory'&&method==='GET')return send(200,await posCall('inventory.list',null,query()));
+   const target=path.match(/^\/api\/(receipts|inventory|cash\/shifts)\/([^/]+)(\/ledger|\/close)?$/);
+   if(target){
+    const [,section,id,suffix]=target;
+    if(!uuid.test(id))fail('ناسنامە نادروستە');
+    if(section==='receipts'&&!suffix&&method==='GET')return send(200,await posCall('receipts.get',id));
+    if(section==='inventory'&&suffix==='/ledger'&&method==='GET')return send(200,await posCall('inventory.ledger',id,query()));
+    if(section==='cash/shifts'&&suffix==='/close'&&method==='POST'){cashGate();return send(200,await posCall('cash.close',id,await body(req)));}
    }
    fail('ئەم بەشە هێشتا بە Backend ـی وێب پەیوەست نەکراوە',501);
   }catch(e){const status=e instanceof WebCustomerError?e.status:503;if(status===429)res.setHeader('Retry-After','60');return send(status,{error:e instanceof WebCustomerError?e.message:'پەیوەندیی سێرڤەر سەرکەوتوو نەبوو'});}

@@ -10,7 +10,8 @@ async function fixture(t,enabled=false){
  const state=()=>({hosted:true,setup_required:false,user:active?{id:'qa-owner',role:'owner',permissions:['debt.read','debt.post']}:null,csrf:active?csrf:null,expires_at:Date.now()+3600000});
  const auth={state:async()=>{stateObserved();return state();},login:async()=>{active=true;return{token,...state()};},setup:async()=>{active=true;return{token,...state()};},logout:async()=>{active=false;return{ok:true};},changePassword:async()=>{active=false;return{ok:true,reauthentication_required:true};}};
  const customers={call:async value=>{if(!active)throw new WebCustomerError('revoked QA session',401);calls.push(value);return{customer:{id:customer},entries:[],balance:0};}};
- const server=createServer(createWebHandler({env:{ZHIROX_WEB_ORIGIN:'https://app.example',ZHIROX_DEBT_POSTING:enabled?'enabled':'disabled'},auth,customers}));
+ const pos={call:async value=>{if(!active)throw new WebCustomerError('revoked QA session',401);calls.push(value);return{cart:{revision:1},shifts:[],events:[],recently_closed:[]};}};
+ const server=createServer(createWebHandler({env:{ZHIROX_CASH_ACCOUNTING:enabled?'enabled':'disabled',ZHIROX_WEB_SALES_POSTING:enabled?'enabled':'disabled',ZHIROX_WEB_ORIGIN:'https://app.example',ZHIROX_DEBT_POSTING:enabled?'enabled':'disabled'},auth,customers,pos}));
  server.listen(0,'127.0.0.1');await once(server,'listening');
  t.after(()=>new Promise(resolve=>{server.closeAllConnections();server.close(resolve);}));
  const port=server.address().port;
@@ -34,7 +35,7 @@ test('real hosted HTTP handler issues secure cookie, keeps raw session out of JS
  assert.equal((await f.call('/api/customers/'+customer)).status,200);
  const locked=await f.call('/api/debt/customers/'+customer+'/entries',{method:'POST',data:{}});
  assert.equal(locked.status,409);assert.equal(f.calls.length,1);
- assert.equal((await f.call('/api/sales',{method:'POST',data:{}})).status,501);
+ assert.equal((await f.call('/api/sales',{method:'POST',data:{}})).status,409);
  const logout=await f.call('/api/auth/logout',{method:'POST',data:{}});assert.equal(logout.status,200);
  assert.ok(logout.headers.get('set-cookie').includes('Max-Age=0'));
  assert.equal((await f.call('/api/customers')).status,401);
@@ -78,4 +79,21 @@ test('Vercel rewrites retain original API action and reject ambiguous route quer
  assert.equal(path,'/api/auth/state');
  const invalid=await handleWebRequest(new Request('https://app.example/api/index?__zhirox_path=auth/state&__zhirox_path=users'),handler);
  assert.equal(invalid.status,400);
+});
+
+test('hosted POS HTTP routes preserve draft revision and receipt identity with CSRF and posting gates',async t=>{
+ const f=await fixture(t);f.setActive(true);
+ for(const path of ['/api/cart/checkout','/api/sales','/api/cash/shifts'])assert.equal((await f.call(path,{method:'POST',data:{}})).status,409);
+ assert.equal(f.calls.length,0);
+ const g=await fixture(t,true);g.setActive(true);
+ const routes=[['/api/catalog?q=tea','GET','products.list'],['/api/pos/barcode?code=QA','GET','products.barcode'],['/api/pos/products','POST','products.ids'],['/api/cart','GET','cart.read'],['/api/cart','PUT','cart.save'],['/api/cart/checkout','POST','cart.checkout'],['/api/sales','POST','sales.create'],['/api/cash','GET','cash.status'],['/api/cash/shifts','POST','cash.open'],['/api/cash/shifts/'+customer+'/close','POST','cash.close'],['/api/receipts','GET','receipts.list'],['/api/receipts/'+customer,'GET','receipts.get'],['/api/inventory','GET','inventory.list'],['/api/inventory/'+customer+'/ledger','GET','inventory.ledger']];
+ for(const [path,method,action] of routes){
+  const response=await g.call(path,{method,data:method==='GET'?undefined:{revision:4,request_id:'synthetic-request-0001'}});
+  assert.ok(response.status>=200&&response.status<300,path+': '+response.status);
+  const call=g.calls.at(-1);assert.equal(call.action,action);assert.equal(call.sessionToken,token);
+  if(method!=='GET'){assert.equal(call.csrf,csrf);assert.equal(call.payload.revision,4);}
+  if(path.includes(customer))assert.equal(call.targetId,customer);
+ }
+ assert.equal((await g.call('/api/cart',{method:'PUT',data:{},headers:{'X-Zhirox-CSRF':'wrong'}})).status,403);
+ assert.equal((await g.call('/api/receipts/bad')).status,400);
 });
